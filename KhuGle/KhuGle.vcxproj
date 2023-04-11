@@ -142,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="KhuGle3DSprite.cpp" />
     <ClCompile Include="KhuGleBase.cpp" />
     <ClCompile Include="KhuGleComponent.cpp" />
     <ClCompile Include="KhuGleLayer.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="KhuGle3DSprite.h" />
     <ClInclude Include="KhuGleBase.h" />
     <ClInclude Include="KhuGleComponent.h" />
     <ClInclude Include="KhuGleLayer.h" />
