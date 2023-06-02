@@ -10,9 +10,6 @@
 #include <cmath>
 #include <vector>
 
-//#include "KhuGle3DSprite.h"
-
-
 #define Pi	3.14159
 
 typedef unsigned long KgColor24;
@@ -94,6 +91,22 @@ public:
 };
 CKgVector3D operator*(double s, CKgVector3D v);
 
+struct CKgTriangle {
+	CKgVector3D v0, v1, v2;
+	bool bFill;
+	CKgTriangle() : v0(CKgVector3D()), v1(CKgVector3D()), v2(CKgVector3D()), bFill(false) {}
+	CKgTriangle(CKgVector3D vv0, CKgVector3D vv1, CKgVector3D vv2, bool bFill) : v0(vv0), v1(vv1), v2(vv2), bFill(bFill) {}
+};
+
+struct CKg3DLine
+{
+	CKgVector3D start, end;
+
+	CKg3DLine() : start(CKgVector3D()), end(CKgVector3D()) {}
+	CKg3DLine(CKgVector3D start, CKgVector3D direction) : start(start), end(start + direction) {}
+};
+
+
 unsigned char **cmatrix(int nH, int nW);
 void free_cmatrix(unsigned char **Image, int nH, int nW);
 double **dmatrix(int nH, int nW);
@@ -109,4 +122,4 @@ void DrawTriangle_Raw(unsigned char** R, unsigned char** G, unsigned char** B, d
 
 bool linePlaneIntersection(CKgVector3D& contact, CKgVector3D ray, CKgVector3D rayOrigin, CKgVector3D normal, CKgVector3D coord);
 
-int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, CKgVector3D p0, CKgVector3D p1, CKgVector3D p2, std::vector<CKgVector3D>& tri1, std::vector<CKgVector3D>& tri2);
+int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, CKgTriangle triangle, std::vector<CKgTriangle>& new_tris);

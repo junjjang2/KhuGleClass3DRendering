@@ -25,6 +25,5 @@ public:
 
 	virtual void Render();
 	virtual std::vector<double> getRenderInform();
-
 };
 

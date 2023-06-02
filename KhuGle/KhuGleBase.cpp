@@ -3,7 +3,6 @@
 //	Prof. Daeho Lee, nize@khu.ac.kr
 //
 #include "KhuGleBase.h"
-#include "KhuGle3DSprite.h"
 #include <cmath>
 #include <vector>
 
@@ -461,124 +460,7 @@ void Bresenham(unsigned char** R, unsigned char** G, unsigned char** B, double**
 			}
 		}
 	}
-	
-	/*int x_min = std::max(0, std::min({ x0, x1, x2 }));
-	int x_max = std::min(nW - 1, std::max({ x0, x1, x2 }));
-	int y_min = std::max(0, std::min({ y0, y1, y2 }));
-	int y_max = std::min(nH - 1, std::max({ y0, y1, y2 }));
 
-	// Brasenham's Algorithm
-	std::vector<std::pair<int, int>> minmax(y_max - y_min + 1, { x_max, x_min });
-
-	int xs = x0, xe = x1;
-	int ys = y0, ye = y1;
-	if (x0 > x1)
-	{
-		xs = x1;
-		xe = x0;
-		ys = y1;
-		ye = y0;
-	}
-	xs = std::max(0, xs);
-	xe = std::min(nW - 1, xe);
-	ys = std::max(0, ys);
-	ye = std::min(nW - 1, ye);
-
-	int dx = xe - xs;
-	int dy = ye - ys;
-	int e = 0;
-	int y = ys;
-	for (int x = xs; x <= xe && y_min <= y && y <= y_max; x++) {
-		auto& x_left = minmax[y - y_min].first;
-		auto& x_right = minmax[y - y_min].second;
-		minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
-
-		e += std::abs(dy);
-		while (e >= dx && y_min <= y && y <= y_max)
-		{
-			minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
-			e -= dx;
-			if (dy >= 0)
-				y += 1;
-			else
-				y -= 1;
-		}
-
-	}
-
-	xs = x1, xe = x2;
-	ys = y1, ye = y2;
-	if (x1 > x2)
-	{
-		xs = x2;
-		xe = x1;
-		ys = y2;
-		ye = y1;
-	}
-	xs = std::max(0, xs);
-	xe = std::min(nW - 1, xe);
-	ys = std::max(0, ys);
-	ye = std::min(nW - 1, ye);
-
-	dx = xe - xs;
-	dy = ye - ys;
-	e = 0;
-	y = ys;
-	for (int x = xs; x <= xe && y_min <= y && y <= y_max; x++) {
-
-		auto& x_left = minmax[y - y_min].first;
-		auto& x_right = minmax[y - y_min].second;
-		minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
-
-		e += std::abs(dy);
-		while (e >= dx && y_min <= y && y <= y_max)
-		{
-			minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
-			e -= dx;
-			if (dy >= 0)
-				y += 1;
-			else
-				y -= 1;
-		}
-	}
-
-	xs = x0, xe = x2;
-	ys = y0, ye = y2;
-	if (x0 > x2)
-	{
-		xs = x2;
-		xe = x0;
-		ys = y2;
-		ye = y0;
-	}
-	xs = std::max(0, xs);
-	xe = std::min(nW - 1, xe);
-	ys = std::max(0, ys);
-	ye = std::min(nW - 1, ye);
-
-	dx = xe - xs;
-	dy = ye - ys;
-	e = 0;
-	y = ys;
-	for (int x = xs; x <= xe && y_min <= y && y <= y_max; x++) {
-
-		auto& x_left = minmax[y - y_min].first;
-		auto& x_right = minmax[y - y_min].second;
-		minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
-
-		e += std::abs(dy);
-		while (e >= dx && y_min <= y && y <= y_max)
-		{
-			minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
-			e -= dx;
-			if (dy >= 0)
-				y += 1;
-			else
-				y -= 1;
-		}
-
-	}
-	*/
 	for (int y = 0; y < y_max - y_min; y++)
 	{
 		auto& x_left = minmax[y].first;
@@ -601,7 +483,6 @@ void Bresenham(unsigned char** R, unsigned char** G, unsigned char** B, double**
 				B[y + y_min][x] = KgGetBlue(Color);
 
 			}
-			//if (x < 0 || x >= nW || y + y_min < 0 || y + y_min >= nH) continue;
 		}
 	}
 }
@@ -860,8 +741,12 @@ bool linePlaneIntersection(CKgVector3D& contact, CKgVector3D ray, CKgVector3D ra
 }
 
 
-int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, CKgVector3D p0, CKgVector3D p1, CKgVector3D p2, std::vector<CKgVector3D>& tri1, std::vector<CKgVector3D>& tri2)
-{
+int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, CKgTriangle triangle, std::vector<CKgTriangle>& new_tris){
+
+	CKgVector3D p0 = triangle.v0;
+	CKgVector3D p1 = triangle.v1;
+	CKgVector3D p2 = triangle.v2;
+
 	std::vector<CKgVector3D> inside_points(3);
 	std::vector<CKgVector3D> outside_points(3);
 	int inside_points_cnt = 0;
@@ -886,9 +771,7 @@ int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, C
 
 
 	if (outside_points_cnt == 0) {
-		tri1.push_back(p0);
-		tri1.push_back(p1);
-		tri1.push_back(p2);
+		new_tris.push_back(triangle);
 		return 1;
 	}
 	if (outside_points_cnt == 1) {
@@ -897,24 +780,9 @@ int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, C
 		linePlaneIntersection(clip1, inside_points[0] - outside_points[0], outside_points[0], plane_normal, plane_pos);
 		linePlaneIntersection(clip2, inside_points[1] - outside_points[0], outside_points[0], plane_normal, plane_pos);
 
-		tri1.push_back(clip1);
-		tri1.push_back(inside_points[0]);
-		tri1.push_back(inside_points[1]);
+		new_tris.push_back(CKgTriangle(clip1, inside_points[0], inside_points[1], true));
+		new_tris.push_back(CKgTriangle(clip2, inside_points[1], clip1, true));
 
-		tri2.push_back(clip2);
-		tri2.push_back(inside_points[1]);
-		tri2.push_back(clip1);
-
-		/*
-		std::cout << "Origin " << outside_points[0].x << " " << outside_points[0].y << " " << outside_points[0].z << std::endl;
-		std::cout << "Origin1" << inside_points[0].x << " " << inside_points[0].y << " " << inside_points[0].z << std::endl;
-		std::cout << "Origin2" << inside_points[1].x << " " << inside_points[1].y << " " << inside_points[1].z << std::endl;
-
-		std::cout << "clip1  " << clip1.x << " " << clip1.y << " " << clip1.z << std::endl;
-		std::cout << "clip2  " << clip2.x << " " << clip2.y << " " << clip2.z << std::endl;
-		*/
-
-		
 		return 2;
 	}
 
@@ -923,9 +791,7 @@ int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, C
 		linePlaneIntersection(clip1, inside_points[0] - outside_points[0], outside_points[0], plane_normal, plane_pos);
 		linePlaneIntersection(clip2, inside_points[0] - outside_points[1], outside_points[1], plane_normal, plane_pos);
 
-		tri1.push_back(clip1);
-		tri1.push_back(inside_points[0]);
-		tri1.push_back(clip2);
+		new_tris.push_back(CKgTriangle(clip1, inside_points[0], clip2, true));
 
 		return 1;
 	}

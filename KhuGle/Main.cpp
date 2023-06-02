@@ -60,27 +60,17 @@ CThreeDim::CThreeDim(int nW, int nH) : CKhuGleWin(nW, nH)
 	m_pGameLayer->AddChild(m_p_Axis_Y);
 	m_pGameLayer->AddChild(m_p_Axis_Z);
 
-	//auto* m_pObject3Daxis = new CKhuGle3DSprite(m_pGameLayer->m_nW, m_pGameLayer->m_nH, Pi / 2., 1000., 0.1, KG_COLOR_24_RGB(255, 255, 255), m_camera, CKgVector3D(0, 0, 0), std::vector<CKgTriangle>{CKgTriangle(CKgVector3D(0.5, 0, 0), CKgVector3D(0., 0.5, 0.), CKgVector3D(0., 0., 0.5))});
-	//m_pGameLayer->AddChild(m_pObject3Daxis);
 
 
-	std::vector<CKgTriangle> SurfaceMesh;
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(-0.5, 0., -sqrt(3.) / 6), CKgVector3D(0.5, 0., -sqrt(3.) / 6), CKgVector3D(0., 0., sqrt(3.) / 3), true));
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(0., 0., sqrt(3.) / 3), CKgVector3D(0.5, 0., -sqrt(3.) / 6), CKgVector3D(0., sqrt(3.) / 3, 0.), true));
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(-0.5, 0., -sqrt(3.) / 6), CKgVector3D(0, 0., sqrt(3.) / 3), CKgVector3D(0., sqrt(3.) / 3, 0.), true));
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(0.5, 0., -sqrt(3.) / 6), CKgVector3D(-0.5, 0., -sqrt(3.) / 6), CKgVector3D(0., sqrt(3.) / 3, 0.), true));
-	m_pObject3D = new CKhuGle3DSprite(KG_COLOR_24_RGB(255, 0, 255), CKgVector3D(0, 0, 0), SurfaceMesh, m_camera);
+	m_pObject3D = new CKhuGle3DSprite(KG_COLOR_24_RGB(255, 0, 255), CKgVector3D(0, 0, 0), m_camera, "asd.obj");
+	//m_pGameLayer->AddChild(m_pObject3D);
 
-	SurfaceMesh.clear();
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(-0.5, 0., -sqrt(3.) / 6), CKgVector3D(0.5, 0., -sqrt(3.) / 6), CKgVector3D(0., 0., sqrt(3.) / 3), false));
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(0., 0., sqrt(3.) / 3), CKgVector3D(0.5, 0., -sqrt(3.) / 6), CKgVector3D(0., sqrt(3.) / 3, 0.), false));
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(-0.5, 0., -sqrt(3.) / 6), CKgVector3D(0, 0., sqrt(3.) / 3), CKgVector3D(0., sqrt(3.) / 3, 0.), false));
-	SurfaceMesh.push_back(CKgTriangle(CKgVector3D(0.5, 0., -sqrt(3.) / 6), CKgVector3D(-0.5, 0., -sqrt(3.) / 6), CKgVector3D(0., sqrt(3.) / 3, 0.), false));
-	auto m_pObject3DEdge = new CKhuGle3DSprite(KG_COLOR_24_RGB(0, 0, 0), CKgVector3D(0, 0, 0), SurfaceMesh, m_camera);
+	auto m_pObject3DEdge = new CKhuGle3DSprite(KG_COLOR_24_RGB(0, 0, 0), CKgVector3D(0, 0, 0), m_camera, "asd.obj");
+	m_pGameLayer->AddChild(m_pObject3DEdge);
 
 	auto m_pShip = new CKhuGle3DSprite(KG_COLOR_24_RGB(255, 255, 255), CKgVector3D(0, 0, 0), m_camera, "VideoShip.obj");
 	m_pShip->RotateBy(0, Pi / 2, Pi / 2);
-	m_pGameLayer->AddChild(m_pShip);
+	//m_pGameLayer->AddChild(m_pShip);
 
 
 	//auto m_IronMan = new CKhuGle3DSprite(KG_COLOR_24_RGB(255, 255, 255), CKgVector3D(0, 0, 0), m_camera, "IronMan.obj");
@@ -88,11 +78,7 @@ CThreeDim::CThreeDim(int nW, int nH) : CKhuGleWin(nW, nH)
 	//m_pGameLayer->AddChild(m_IronMan);
 
 
-	m_pGameLayer->AddChild(m_pObject3D);
 
-	m_pGameLayer->AddChild(m_pObject3DEdge);
-	//auto m_pPortal = new CKhuGlePortal(m_pGameLayer->m_nW, m_pGameLayer->m_nH, Pi / 2, 1000, 0.1, KG_COLOR_24_RGB(0, 0, 0), CKgVector3D(0, 0, 0), CKgVector3D(0, 0, 1), m_camera);
-	//m_pGameLayer->AddChild(m_pPortal);
 }
 
 void CThreeDim::Update()
@@ -160,6 +146,3 @@ int main()
 
 	return 0;
 }
-
-// define std::pair<std::vector<int, int>(2), KgColor24> render_inform
-// or ... std::pair<render_line = <int, int, int, int>, KgColor24>
