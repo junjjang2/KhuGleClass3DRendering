@@ -46,6 +46,8 @@ void CKhuGleLayer::SetBackgroundImage(int nW, int nH, KgColor24 bgColor)
 	m_ImageBgG = cmatrix(m_nH, m_nW);
 	m_ImageBgB = cmatrix(m_nH, m_nW);
 
+	m_Depth = dmatrix(m_nH, m_nW);
+
 	int x, y;
 	for(y = 0 ; y < m_nH ; y++)
 		for(x = 0 ; x < m_nW ; x++)
@@ -53,6 +55,8 @@ void CKhuGleLayer::SetBackgroundImage(int nW, int nH, KgColor24 bgColor)
 			m_ImageBgR[y][x] = KgGetRed(bgColor);
 			m_ImageBgG[y][x] = KgGetGreen(bgColor);
 			m_ImageBgB[y][x] = KgGetBlue(bgColor);
+			m_Depth[y][x] = 0;
+
 		}
 
 	m_bInit = true;
@@ -70,8 +74,11 @@ void CKhuGleLayer::ResetBackgroundImage()
 		free_cmatrix(m_ImageBgG, m_nH, m_nW);
 		free_cmatrix(m_ImageBgB, m_nH, m_nW);
 
+		free_dmatrix(m_Depth, m_nH, m_nW);
+
 		m_bInit = false;
 	}
+
 }
 
 void CKhuGleLayer::SetBgColor(KgColor24 bgColor)
@@ -81,6 +88,11 @@ void CKhuGleLayer::SetBgColor(KgColor24 bgColor)
 
 void CKhuGleLayer::Render()
 {
+	// clear Depth Map
+	for(int y=0; y< m_nH; y++)
+		for(int x=0; x<m_nW; x++)
+			m_Depth[y][x] = 0;
+	// end
 	int y;
 	for(y = 0 ; y < m_nH ; y++)
 	{
@@ -91,4 +103,25 @@ void CKhuGleLayer::Render()
 
 	for(auto &Child : m_Children)
 		Child->Render();
+}
+
+void CKhuGleLayer::newRender()
+{
+	int y;
+	for (y = 0; y < m_nH; y++)
+	{
+		memcpy(m_ImageR[y], m_ImageBgR[y], m_nW);
+		memcpy(m_ImageG[y], m_ImageBgG[y], m_nW);
+		memcpy(m_ImageB[y], m_ImageBgB[y], m_nW);
+	}
+	std::vector<std::vector<double>> job_list;
+	for (auto& Child : m_Children) {
+		job_list.push_back(Child->getRenderInform());
+	}
+
+}
+std::vector<double> CKhuGleLayer::getRenderInform()
+{
+	return std::vector<double>(0, 0.);
+
 }

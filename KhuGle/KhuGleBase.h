@@ -2,10 +2,16 @@
 //	Dept. Software Convergence, Kyung Hee University
 //	Prof. Daeho Lee, nize@khu.ac.kr
 //
+
+
 #pragma once
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
+
+//#include "KhuGle3DSprite.h"
+
 
 #define Pi	3.14159
 
@@ -97,3 +103,10 @@ void DrawLine(unsigned char **ImageGray, int nW, int nH, int x0, int y0, int x1,
 
 bool InverseMatrix(double  **a, double **y, int nN);
 
+void MatrixMultiply44(double** result, double** mat1, double** mat2);
+
+void DrawTriangle_Raw(unsigned char** R, unsigned char** G, unsigned char** B, double** depth, int nW, int nH, int x0, int y0, double z0, int x1, int y1, double z1, int x2, int y2, double z2, unsigned char Color, bool bFill);
+
+bool linePlaneIntersection(CKgVector3D& contact, CKgVector3D ray, CKgVector3D rayOrigin, CKgVector3D normal, CKgVector3D coord);
+
+int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, CKgVector3D p0, CKgVector3D p1, CKgVector3D p2, std::vector<CKgVector3D>& tri1, std::vector<CKgVector3D>& tri2);

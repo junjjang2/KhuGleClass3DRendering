@@ -47,7 +47,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -146,6 +146,7 @@
     <ClCompile Include="KhuGleBase.cpp" />
     <ClCompile Include="KhuGleComponent.cpp" />
     <ClCompile Include="KhuGleLayer.cpp" />
+    <ClCompile Include="KhuGleRenderingEngine.cpp" />
     <ClCompile Include="KhuGleScene.cpp" />
     <ClCompile Include="KhuGleSprite.cpp" />
     <ClCompile Include="KhuGleWin.cpp" />
@@ -156,6 +157,7 @@
     <ClInclude Include="KhuGleBase.h" />
     <ClInclude Include="KhuGleComponent.h" />
     <ClInclude Include="KhuGleLayer.h" />
+    <ClInclude Include="KhuGleRenderingEngine.h" />
     <ClInclude Include="KhuGleScene.h" />
     <ClInclude Include="KhuGleSprite.h" />
     <ClInclude Include="KhuGleWin.h" />

@@ -3,6 +3,7 @@
 //	Prof. Daeho Lee, nize@khu.ac.kr
 //
 #include "KhuGleWin.h"
+
 #include <cmath>
 #include <cstdio>
 #include <iostream>
@@ -244,10 +245,12 @@ void CKhuGleWin::Update()
 	char strFps[200];
 
 	sprintf(strFps, "FPS: %7.3lf, Elapsed time: %lf", m_Fps, m_ElapsedTime);
-	if(m_bViewFps)
+
+	//override in main.cpp
+	/*if(m_bViewFps)
 	{
 		std::cout << strFps << std::endl;
-	}
+	}*/
 }
 
 void CKhuGleWin::OnPaint()

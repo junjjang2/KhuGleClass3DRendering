@@ -19,5 +19,6 @@ public:
 	void AddChild(CKhuGleComponent *pChild);
 
 	virtual void Render() = 0;
+	virtual std::vector<double> getRenderInform() = 0;
 };
 

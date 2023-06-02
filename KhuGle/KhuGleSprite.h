@@ -40,6 +40,8 @@ public:
 	static void DrawLine(unsigned char **R, unsigned char **G, unsigned char **B, int nW, int nH, int x0, int y0, int x1, int y1, KgColor24 Color24);
 
 	virtual void Render();
+	virtual std::vector<double> getRenderInform();
+
 	void MoveBy(double OffsetX, double OffsetY);
 	void MoveTo(double X, double Y);
 	void Move();

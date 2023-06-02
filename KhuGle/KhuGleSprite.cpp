@@ -55,7 +55,7 @@ void CKhuGleSprite::Render()
 {
 	if(!m_Parent) return;
 
-	CKhuGleLayer *Parent = (CKhuGleLayer *)m_Parent;
+	CKhuGleLayer *Parent = (CKhuGleLayer*)m_Parent;
 
 	if(m_nType == GP_STYPE_LINE)
 	{
@@ -163,6 +163,12 @@ void CKhuGleSprite::Render()
 	}
 }
 
+std::vector<double> CKhuGleSprite::getRenderInform()
+{
+	return std::vector<double>(0, 0.);
+
+}
+
 void CKhuGleSprite::MoveBy(double OffsetX, double OffsetY)
 {
 	m_Center.x += OffsetX;
@@ -203,3 +209,5 @@ void CKhuGleSprite::Move()
 		m_rtBoundBox.Bottom = m_rtBoundBox.Top + nH;
 	}
 }
+
+

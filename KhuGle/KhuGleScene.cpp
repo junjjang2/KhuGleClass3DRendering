@@ -18,6 +18,7 @@
 #endif
 #endif  // _DEBUG
 
+
 CKhuGleScene::CKhuGleScene(int nW, int nH, KgColor24 bgColor)
 {
 	m_bInit = false;
@@ -100,5 +101,11 @@ void CKhuGleScene::Render()
 			memcpy(m_ImageB[y+Layer->m_ptPos.Y] + Layer->m_ptPos.X, Layer->m_ImageB[y], nLen);
 		}
 	}
+}
+
+std::vector<double> CKhuGleScene::getRenderInform()
+{
+	return std::vector<double>(0, 0.);
+
 }
 

@@ -3,13 +3,16 @@
 //	Prof. Daeho Lee, nize@khu.ac.kr
 //
 #include "KhuGleBase.h"
+#include "KhuGle3DSprite.h"
 #include <cmath>
+#include <vector>
 
 #pragma warning(disable:4996)
 
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
 #include <crtdbg.h>
+#include <iostream>
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
@@ -219,7 +222,7 @@ void free_dmatrix(double **Image, int nH, int nW) {
 	delete [] Image;
 }
 
-void DrawLine(unsigned char **ImageGray, int nW, int nH, int x0, int y0, int x1, int y1, unsigned char Color)
+void DrawLine(unsigned char** ImageGray, int nW, int nH, int x0, int y0, int x1, int y1, unsigned char Color)
 {
 	int nDiffX = abs(x0-x1);
 	int nDiffY = abs(y0-y1);
@@ -294,16 +297,386 @@ void DrawLine(unsigned char **ImageGray, int nW, int nH, int x0, int y0, int x1,
 	}
 }
 
+void Bresenham(unsigned char** R, unsigned char** G, unsigned char** B, double** depth, int nW, int nH, int x0, int y0, double z0, int x1, int y1, double z1, int x2, int y2, double z2, unsigned char Color, bool bFill)
+{
+	
+	int x_min = std::max(0, std::min({ x0, x1, x2 }));
+	int x_max = std::min(nW - 1, std::max({ x0, x1, x2 }));
+	int y_min = std::max(0, std::min({ y0, y1, y2 }));
+	int y_max = std::min(nH - 1, std::max({ y0, y1, y2 }));
+
+	if (x_min > x_max || y_min > y_max)
+		return;
+
+	std::vector<std::pair<int, int>> minmax(y_max - y_min + 1, { x_max, x_min });
+	std::vector<std::pair<double, double>> depth_minmax(y_max - y_min + 1, { 1.0, 0. });
+
+	int nDiffX;
+	int nDiffY;
+	double dDiffZ;
+
+	int x, y;
+	double z;
+	int nFrom, nTo;
+	double zFrom, zTo;
+	std::vector<std::vector<int>> pair_list = { {x0, x1, y0, y1}, { x1, x2, y1, y2 }, { x2, x0, y2, y0 } };
+
+	for (auto& params : pair_list)
+	{
+
+		x0 = params[0];
+		x1 = params[1];
+		y0 = params[2];
+		y1 = params[3];
+
+		nDiffX = abs(x0 - x1);
+		nDiffY = abs(y0 - y1);
+
+		if (nDiffY == 0 && nDiffX == 0)
+		{
+			x = x0;
+			y = y0;
+			z = z0;
+			if (!(x < 0 || x >= nW || y < 0 || y >= nH))
+			{
+				auto& x_left = minmax[y - y_min].first;
+				auto& x_right = minmax[y - y_min].second;
+				minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+				auto& z_left = depth_minmax[y - y_min].first;
+				auto& z_right = depth_minmax[y - y_min].second;
+				depth_minmax[y - y_min] = { std::min(z_left, z), std::max(z_right, z) };
+			}
+		}
+		else if (nDiffX == 0)
+		{
+			x = x0;
+			
+
+			nFrom = (y0 < y1 ? y0 : y1);
+			if (nFrom < 0) nFrom = 0;
+			nTo = (y0 < y1 ? y1 : y0);
+			if (nTo >= nH) nTo = nH - 1;
+
+			zFrom = (nFrom == y0 ? z0 : z1);
+			zTo = (nFrom == y0 ? z1 : z0);
+			dDiffZ = (zTo - zFrom) / (nTo - nFrom);
+			z = zFrom - dDiffZ;
+
+			for (y = nFrom; y <= nTo; y++)
+			{
+				z += dDiffZ;
+
+				if (x < 0 || x >= nW || y < 0 || y >= nH) continue;
+
+				auto& x_left = minmax[y - y_min].first;
+				auto& x_right = minmax[y - y_min].second;
+				minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+				auto& z_left = depth_minmax[y - y_min].first;
+				auto& z_right = depth_minmax[y - y_min].second;
+				depth_minmax[y - y_min] = { std::min(z_left, z), std::max(z_right, z) };
+			}
+		}
+		else if (nDiffY == 0)
+		{
+			y = y0;
+
+			nFrom = (x0 < x1 ? x0 : x1);
+			if (nFrom < 0) nFrom = 0;
+			nTo = (x0 < x1 ? x1 : x0);
+			if (nTo >= nW) nTo = nW - 1;
+
+			zFrom = (nFrom == x0 ? z0 : z1);
+			zTo = (nFrom == x0 ? z1 : z0);
+			dDiffZ = (zTo - zFrom) / (nTo - nFrom);
+			z = zFrom - dDiffZ;
+
+			for (x = nFrom; x <= nTo; x++)
+			{
+				z += dDiffZ;
+
+				if (x < 0 || x >= nW || y < 0 || y >= nH) continue;
+				auto& x_left = minmax[y - y_min].first;
+				auto& x_right = minmax[y - y_min].second;
+				minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+				auto& z_left = depth_minmax[y - y_min].first;
+				auto& z_right = depth_minmax[y - y_min].second;
+				depth_minmax[y - y_min] = { std::min(z_left, z), std::max(z_right, z) };
+			}
+		}
+		else if (nDiffY > nDiffX)
+		{
+			nFrom = (y0 < y1 ? y0 : y1);
+			if (nFrom < 0) nFrom = 0;
+			nTo = (y0 < y1 ? y1 : y0);
+			if (nTo >= nH) nTo = nH - 1;
+
+			zFrom = (nFrom == y0 ? z0 : z1);
+			zTo = (nFrom == y0 ? z1 : z0);
+			dDiffZ = (zTo - zFrom) / (nTo - nFrom);
+			z = zFrom - dDiffZ;
+
+			for (y = nFrom; y <= nTo; y++)
+			{
+				x = (y - y0) * (x0 - x1) / (y0 - y1) + x0;
+				z += dDiffZ;
+
+				if (x < 0 || x >= nW || y < 0 || y >= nH) continue;
+				auto& x_left = minmax[y - y_min].first;
+				auto& x_right = minmax[y - y_min].second;
+				minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+				auto& z_left = depth_minmax[y - y_min].first;
+				auto& z_right = depth_minmax[y - y_min].second;
+				depth_minmax[y - y_min] = { std::min(z_left, z), std::max(z_right, z) };
+				z += dDiffZ;
+			}
+		}
+		else
+		{
+			nFrom = (x0 < x1 ? x0 : x1);
+			if (nFrom < 0) nFrom = 0;
+			nTo = (x0 < x1 ? x1 : x0);
+			if (nTo >= nW) nTo = nW - 1;
+
+			zFrom = (nFrom == x0 ? z0 : z1);
+			zTo = (nFrom == x0 ? z1 : z0);
+			dDiffZ = (zTo - zFrom) / (nTo - nFrom);
+			z = zFrom - dDiffZ;
+
+			for (x = nFrom; x <= nTo; x++)
+			{
+				z += dDiffZ;
+				y = (x - x0) * (y0 - y1) / (x0 - x1) + y0;
+				if (x < 0 || x >= nW || y < 0 || y >= nH) continue;
+				auto& x_left = minmax[y - y_min].first;
+				auto& x_right = minmax[y - y_min].second;
+				minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+				auto& z_left = depth_minmax[y - y_min].first;
+				auto& z_right = depth_minmax[y - y_min].second;
+				depth_minmax[y - y_min] = { std::min(z_left, z), std::max(z_right, z) };
+			}
+		}
+	}
+	
+	/*int x_min = std::max(0, std::min({ x0, x1, x2 }));
+	int x_max = std::min(nW - 1, std::max({ x0, x1, x2 }));
+	int y_min = std::max(0, std::min({ y0, y1, y2 }));
+	int y_max = std::min(nH - 1, std::max({ y0, y1, y2 }));
+
+	// Brasenham's Algorithm
+	std::vector<std::pair<int, int>> minmax(y_max - y_min + 1, { x_max, x_min });
+
+	int xs = x0, xe = x1;
+	int ys = y0, ye = y1;
+	if (x0 > x1)
+	{
+		xs = x1;
+		xe = x0;
+		ys = y1;
+		ye = y0;
+	}
+	xs = std::max(0, xs);
+	xe = std::min(nW - 1, xe);
+	ys = std::max(0, ys);
+	ye = std::min(nW - 1, ye);
+
+	int dx = xe - xs;
+	int dy = ye - ys;
+	int e = 0;
+	int y = ys;
+	for (int x = xs; x <= xe && y_min <= y && y <= y_max; x++) {
+		auto& x_left = minmax[y - y_min].first;
+		auto& x_right = minmax[y - y_min].second;
+		minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+		e += std::abs(dy);
+		while (e >= dx && y_min <= y && y <= y_max)
+		{
+			minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+			e -= dx;
+			if (dy >= 0)
+				y += 1;
+			else
+				y -= 1;
+		}
+
+	}
+
+	xs = x1, xe = x2;
+	ys = y1, ye = y2;
+	if (x1 > x2)
+	{
+		xs = x2;
+		xe = x1;
+		ys = y2;
+		ye = y1;
+	}
+	xs = std::max(0, xs);
+	xe = std::min(nW - 1, xe);
+	ys = std::max(0, ys);
+	ye = std::min(nW - 1, ye);
+
+	dx = xe - xs;
+	dy = ye - ys;
+	e = 0;
+	y = ys;
+	for (int x = xs; x <= xe && y_min <= y && y <= y_max; x++) {
+
+		auto& x_left = minmax[y - y_min].first;
+		auto& x_right = minmax[y - y_min].second;
+		minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+		e += std::abs(dy);
+		while (e >= dx && y_min <= y && y <= y_max)
+		{
+			minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+			e -= dx;
+			if (dy >= 0)
+				y += 1;
+			else
+				y -= 1;
+		}
+	}
+
+	xs = x0, xe = x2;
+	ys = y0, ye = y2;
+	if (x0 > x2)
+	{
+		xs = x2;
+		xe = x0;
+		ys = y2;
+		ye = y0;
+	}
+	xs = std::max(0, xs);
+	xe = std::min(nW - 1, xe);
+	ys = std::max(0, ys);
+	ye = std::min(nW - 1, ye);
+
+	dx = xe - xs;
+	dy = ye - ys;
+	e = 0;
+	y = ys;
+	for (int x = xs; x <= xe && y_min <= y && y <= y_max; x++) {
+
+		auto& x_left = minmax[y - y_min].first;
+		auto& x_right = minmax[y - y_min].second;
+		minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+
+		e += std::abs(dy);
+		while (e >= dx && y_min <= y && y <= y_max)
+		{
+			minmax[y - y_min] = { std::min(x_left, x), std::max(x_right, x) };
+			e -= dx;
+			if (dy >= 0)
+				y += 1;
+			else
+				y -= 1;
+		}
+
+	}
+	*/
+	for (int y = 0; y < y_max - y_min; y++)
+	{
+		auto& x_left = minmax[y].first;
+		auto& x_right = minmax[y].second;
+
+		auto& z_left = depth_minmax[y].first;
+		auto& z_right = depth_minmax[y].second;
+
+		double zDiff = (z_right - z_left) / (x_right - x_left + 1);
+		double z = z_left - zDiff;
+		for (int x = x_left; x <= x_right; x++)
+		{
+		    z += zDiff;
+
+			if (0<=z && z<=1.0 && depth[y+y_min][x] < z)
+			{
+				depth[y + y_min][x] = z;
+				R[y + y_min][x] = KgGetRed(Color);
+				G[y + y_min][x] = KgGetGreen(Color);
+				B[y + y_min][x] = KgGetBlue(Color);
+
+			}
+			//if (x < 0 || x >= nW || y + y_min < 0 || y + y_min >= nH) continue;
+		}
+	}
+}
+
+void DrawTriangle_Raw(unsigned char** R, unsigned char** G, unsigned char** B, double** depth, int nW, int nH, int x0, int y0, double z0, int x1, int y1, double z1, int x2, int y2, double z2, unsigned char Color, bool bFill)
+{
+	// For test
+	if (true)
+	{
+		Bresenham(R, G, B, depth, nW, nH, x0, y0, z0, x1, y1, z1, x2, y2, z2, Color, bFill);
+		return;
+	}
+
+	// vector cross product
+	if(bFill == false)
+	{
+		DrawLine(R, nW, nH, x0, y0, x1, y1, KgGetRed(Color));
+		DrawLine(G, nW, nH, x0, y0, x1, y1, KgGetGreen(Color));
+		DrawLine(B, nW, nH, x0, y0, x1, y1, KgGetBlue(Color));
+
+		DrawLine(R, nW, nH, x1, y1, x2, y2, KgGetRed(Color));
+		DrawLine(G, nW, nH, x1, y1, x2, y2, KgGetGreen(Color));
+		DrawLine(B, nW, nH, x1, y1, x2, y2, KgGetBlue(Color));
+
+		DrawLine(R, nW, nH, x0, y0, x2, y2, KgGetRed(Color));
+		DrawLine(G, nW, nH, x0, y0, x2, y2, KgGetGreen(Color));
+		DrawLine(B, nW, nH, x0, y0, x2, y2, KgGetBlue(Color));
+
+		return;
+	}
+	
+	int x_min = std::max(0, std::min({ x0, x1, x2 }));
+	int x_max = std::min(nW-1, std::max({ x0, x1, x2 }));
+	int y_min = std::max(0, std::min({ y0, y1, y2 }));
+	int y_max = std::min(nH-1, std::max({ y0, y1, y2 }));
+
+	for (int y = y_min; y <= y_max; y++)
+	{
+		for (int x = x_min; x <= x_max; x++)
+		{
+			
+
+			CKgVector3D AB{ (double)(x1 - x0), (double)(y1 - y0), 0. };
+			CKgVector3D BC{ (double)(x2 - x1), (double)(y2 - y1), 0. };
+			CKgVector3D CA{ (double)(x0 - x2), (double)(y0 - y2), 0. };
+
+			CKgVector3D AP{ (double)(x - x0), (double)(y - y0), 0. };
+			CKgVector3D BP{ (double)(x - x1), (double)(y - y1), 0. };
+			CKgVector3D CP{ (double)(x - x2), (double)(y - y2), 0. };
+
+			double cross1 = AB.Cross(AP).z;
+			double cross2 = BC.Cross(BP).z;
+			double cross3 = CA.Cross(CP).z;
+
+			if (bFill && (cross1 >= 0 && cross2 >= 0 && cross3 >= 0))
+			{
+
+				R[y][x] = KgGetRed(Color);
+				G[y][x] = KgGetGreen(Color);
+				B[y][x] = KgGetBlue(Color);
+			}
+		}
+	}
+}
+
 // LU decomposition
-bool ludcmp(double **a, int nN, int *indx, double *d)
+bool ludcmp(double** a, int nN, int* indx, double* d)
 {
 	int i, imax, j, k;
 	double big, dum, sum, temp;
-	double *vv = new double[nN];
+	double* vv = new double[nN];
 	const double TinyValue = 1.0e-20;
 
 	*d = 1.0;
-	for(i = 0; i < nN; i++)
+	for (i = 0; i < nN; i++)
 	{
 		big = 0.0;
 		for (j = 0; j < nN; j++)
@@ -319,33 +692,33 @@ bool ludcmp(double **a, int nN, int *indx, double *d)
 		vv[i] = 1.0 / big;
 	}
 
-	for(j = 0; j < nN; j++)
+	for (j = 0; j < nN; j++)
 	{
-		for(i = 0; i < j; i++)
+		for (i = 0; i < j; i++)
 		{
 			sum = a[i][j];
-			for(k = 0; k < i; k++)
+			for (k = 0; k < i; k++)
 				sum -= a[i][k] * a[k][j];
 
 			a[i][j] = sum;
 		}
 
 		big = 0.0;
-		for(i = j; i < nN; i++)
+		for (i = j; i < nN; i++)
 		{
 			sum = a[i][j];
-			for(k = 0; k < j; k++)
+			for (k = 0; k < j; k++)
 				sum -= a[i][k] * a[k][j];
 
 			a[i][j] = sum;
-			if((dum = vv[i] * fabs(sum)) >= big)
+			if ((dum = vv[i] * fabs(sum)) >= big)
 			{
 				big = dum;
 				imax = i;
 			}
 		}
 
-		if(j != imax)
+		if (j != imax)
 		{
 			for (k = 0; k < nN; k++)
 			{
@@ -358,9 +731,9 @@ bool ludcmp(double **a, int nN, int *indx, double *d)
 		}
 
 		indx[j] = imax;
-		if(a[j][j] == 0.0) a[j][j] = TinyValue;
+		if (a[j][j] == 0.0) a[j][j] = TinyValue;
 
-		if(j != nN - 1)
+		if (j != nN - 1)
 		{
 			dum = 1.0 / (a[j][j]);
 			for (i = j + 1; i < nN; i++)
@@ -371,6 +744,8 @@ bool ludcmp(double **a, int nN, int *indx, double *d)
 
 	return true;
 }
+
+
 
 void lubksb(double **a, int nN, int *indx, double *b)
 {
@@ -443,4 +818,120 @@ bool InverseMatrix(double  **a, double **y, int nN)
 	delete[] col;
 
 	return true;
+}
+
+
+void MatrixMultiply44(double** result, double**mat1, double** mat2)
+{
+	for(int i=0; i<4; i++)
+	{
+		for(int j=0; j<4; j++)
+		{
+			double sum = 0.;
+			for(int k=0; k<4; k++)
+			{
+				sum += mat1[i][k] * mat2[k][j];
+			}
+			result[i][j] = sum;
+		}
+	}
+}
+
+bool linePlaneIntersection(CKgVector3D& contact, CKgVector3D ray, CKgVector3D rayOrigin,
+	CKgVector3D normal, CKgVector3D coord) {
+	// get d value
+
+	ray.Normalize();
+
+	if (normal.Dot(ray) == 0) {
+		return false; // No intersection, the line is parallel to the plane
+	}
+
+	// Compute the X value for the directed line ray intersecting the plane
+	float x = (normal.Dot(rayOrigin - coord)) / normal.Dot(ray);
+
+	// output contact point
+	ray.x *= x;
+	ray.y *= x;
+	ray.z *= x;
+	contact = rayOrigin - ray; //Make sure your ray vector is normalized
+
+	return true;
+}
+
+
+int Triangle_ClipAgainstPlain(CKgVector3D plane_pos, CKgVector3D plane_normal, CKgVector3D p0, CKgVector3D p1, CKgVector3D p2, std::vector<CKgVector3D>& tri1, std::vector<CKgVector3D>& tri2)
+{
+	std::vector<CKgVector3D> inside_points(3);
+	std::vector<CKgVector3D> outside_points(3);
+	int inside_points_cnt = 0;
+	int outside_points_cnt = 0;
+
+	plane_normal.Normalize();
+
+	if (p0.Dot(plane_normal) - plane_pos.Dot(plane_normal) >= 0)
+		inside_points[inside_points_cnt++] = p0;
+	else
+		outside_points[outside_points_cnt++] = p0;
+	
+	if (p1.Dot(plane_normal) - plane_pos.Dot(plane_normal) >= 0)
+		inside_points[inside_points_cnt++] = p1;
+	else
+		outside_points[outside_points_cnt++] = p1;
+
+	if (p2.Dot(plane_normal) - plane_pos.Dot(plane_normal) >= 0)
+		inside_points[inside_points_cnt++] = p2;
+	else
+		outside_points[outside_points_cnt++] = p2;
+
+
+	if (outside_points_cnt == 0) {
+		tri1.push_back(p0);
+		tri1.push_back(p1);
+		tri1.push_back(p2);
+		return 1;
+	}
+	if (outside_points_cnt == 1) {
+
+		CKgVector3D clip1, clip2;
+		linePlaneIntersection(clip1, inside_points[0] - outside_points[0], outside_points[0], plane_normal, plane_pos);
+		linePlaneIntersection(clip2, inside_points[1] - outside_points[0], outside_points[0], plane_normal, plane_pos);
+
+		tri1.push_back(clip1);
+		tri1.push_back(inside_points[0]);
+		tri1.push_back(inside_points[1]);
+
+		tri2.push_back(clip2);
+		tri2.push_back(inside_points[1]);
+		tri2.push_back(clip1);
+
+		/*
+		std::cout << "Origin " << outside_points[0].x << " " << outside_points[0].y << " " << outside_points[0].z << std::endl;
+		std::cout << "Origin1" << inside_points[0].x << " " << inside_points[0].y << " " << inside_points[0].z << std::endl;
+		std::cout << "Origin2" << inside_points[1].x << " " << inside_points[1].y << " " << inside_points[1].z << std::endl;
+
+		std::cout << "clip1  " << clip1.x << " " << clip1.y << " " << clip1.z << std::endl;
+		std::cout << "clip2  " << clip2.x << " " << clip2.y << " " << clip2.z << std::endl;
+		*/
+
+		
+		return 2;
+	}
+
+	if (outside_points_cnt == 2) {
+		CKgVector3D clip1, clip2;
+		linePlaneIntersection(clip1, inside_points[0] - outside_points[0], outside_points[0], plane_normal, plane_pos);
+		linePlaneIntersection(clip2, inside_points[0] - outside_points[1], outside_points[1], plane_normal, plane_pos);
+
+		tri1.push_back(clip1);
+		tri1.push_back(inside_points[0]);
+		tri1.push_back(clip2);
+
+		return 1;
+	}
+	if (outside_points_cnt == 3) {
+		return 0;
+	}
+
+	return 0;
 }

@@ -14,6 +14,7 @@ public:
 	int m_nW, m_nH;
 	CKgPoint m_ptPos;
 
+	double** m_Depth;
 	unsigned char **m_ImageR, **m_ImageG, **m_ImageB;
 	unsigned char **m_ImageBgR, **m_ImageBgG, **m_ImageBgB;
 	KgColor24 m_bgColor;
@@ -26,5 +27,7 @@ public:
 	void SetBgColor(KgColor24 bgColor);
 
 	virtual void Render();
+	virtual std::vector<double> getRenderInform();
+	virtual void newRender();
 };
 
