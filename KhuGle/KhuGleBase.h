@@ -75,10 +75,10 @@ CKgVector2D operator*(double s, CKgVector2D v);
 class CKgVector3D 
 {
 public:
-	double x, y, z;
+	double x, y, z, w;
 
-	CKgVector3D() : x(0.), y(0.), z(0.) {}
-	CKgVector3D(double xx, double yy, double zz) : x(xx), y(yy), z(zz) {}
+	CKgVector3D() : x(0.), y(0.), z(0.), w(1.) {}
+	CKgVector3D(double xx, double yy, double zz) : x(xx), y(yy), z(zz), w(1.) {}
 
 	static double abs(CKgVector3D v);
 	void Normalize();

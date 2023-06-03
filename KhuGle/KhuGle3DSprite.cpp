@@ -250,10 +250,151 @@ void CKhuGle3DSprite::Render()
 
 
 	// local position --(transform matrix)-> worldPos --(condition check, View, Projection)-> drawLine
-	
+
 	for (auto& vertex_indexs : triangle_list)
 	{
+		CKgVector3D v0 = vertex_list[vertex_indexs[0]];
+		CKgVector3D v1 = vertex_list[vertex_indexs[1]];
+		CKgVector3D v2 = vertex_list[vertex_indexs[2]];
+
+		// Scale 
+		v0.x *= sx;
+		v0.y *= sy;
+		v0.z *= sz;
+
+		v1.x *= sx;
+		v1.y *= sy;
+		v1.z *= sz;
+
+		v2.x *= sx;
+		v2.y *= sy;
+		v2.z *= sz;
+
+		// Rotation
+		CKgVector3D rotated_v0, rotated_v1, rotated_v2;
+		MatrixVector44(rotated_v0, v0, m_rotation_matrix);
+		MatrixVector44(rotated_v1, v1, m_rotation_matrix);
+		MatrixVector44(rotated_v2, v2, m_rotation_matrix);
+
+		// Translation
+		rotated_v0.x += m_WorldPos.x;
+		rotated_v0.y += m_WorldPos.y;
+		rotated_v0.z += m_WorldPos.z;
+
+		rotated_v1.x += m_WorldPos.x;
+		rotated_v1.y += m_WorldPos.y;
+		rotated_v1.z += m_WorldPos.z;
+
+		rotated_v2.x += m_WorldPos.x;
+		rotated_v2.y += m_WorldPos.y;
+		rotated_v2.z += m_WorldPos.z;
+
+		//// check condition
+		CKgVector3D Side1, Side2, Normal;
+		Side1 = rotated_v1 - rotated_v0;
+		Side2 = rotated_v2 - rotated_v0;
+
+		Normal = Side2.Cross(Side1);
+		Normal.Normalize();
+
+		// culling 
+		if (Normal.Dot(v0 - m_camera->m_WorldPos) > 0)
+			continue;
 		
+		//// end check condition
+
+		// World -> View
+		MatrixVector44(v0, rotated_v0, m_camera->m_view_matrix);
+		MatrixVector44(v1, rotated_v1, m_camera->m_view_matrix);
+		MatrixVector44(v2, rotated_v2, m_camera->m_view_matrix);
+
+
+		// Depth Clipping 
+		if (v0.z < 0 || v0.z < 0 || v0.z < 0) // < m_camera->near
+			continue;
+		
+
+		// View -> Projection
+		CKgVector3D projected_v0, projected_v1, projected_v2;
+
+		MatrixVector44(projected_v0, v0, m_camera->m_projection_matrix);
+		MatrixVector44(projected_v1, v1, m_camera->m_projection_matrix);
+		MatrixVector44(projected_v2, v2, m_camera->m_projection_matrix);
+
+
+		/*for (int j = 0; j < 3; j++) {
+			projected_v0.x *= (1. / projected_v0.w);
+		}*/
+		projected_v0.x += 1;
+		projected_v0.y += 1;
+		projected_v0.x *= Parent->m_nW / 2.;
+		projected_v0.y *= Parent->m_nW / 2.;
+
+		projected_v1.x += 1;
+		projected_v1.y += 1;
+		projected_v1.x *= Parent->m_nW / 2.;
+		projected_v1.y *= Parent->m_nW / 2.;
+
+		projected_v2.x += 1;
+		projected_v2.y += 1;
+		projected_v2.x *= Parent->m_nW / 2.;
+		projected_v2.y *= Parent->m_nW / 2.;
+
+		/*//ProjectionMat[2][i] += 1;
+		ProjectionMat[0][i] *= Parent->m_nW / 2.;
+		ProjectionMat[1][i] *= Parent->m_nW / 2.;
+		//	ProjectionMat[2][i] *= Parent->m_nW / 2.;
+		*/
+
+		/*
+		// Triangle clipping
+		CKgTriangle original_t(projected_v0, projected_v1, projected_v2, true);
+
+		// 그다음 여기
+		std::vector<CKgTriangle> clipped;
+
+		std::list<CKgTriangle> listTriangle;
+		
+
+		
+		listTriangle.push_back(original_t);
+		int nNewTriangles = 1;
+
+		// 여기가 가장 오래 걸림
+		for(int i=0; i< 4; i++)
+		{
+			int nTrisToAdd = 0;
+			while(nNewTriangles > 0)
+			{
+				clipped.clear();
+
+				CKgTriangle temp = listTriangle.front();
+				listTriangle.pop_front();
+				nNewTriangles--;
+
+				switch(i)
+				{
+				case 0: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(0, 1, 0), temp, clipped); break;
+				case 1: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, Parent->m_nH-1, 0), CKgVector3D(0, -1, 0), temp, clipped); break;
+				case 2: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(1, 0, 0), temp, clipped); break;
+				case 3: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(Parent->m_nW-1, 0, 0), CKgVector3D(-1, 0, 0), temp, clipped); break;
+				}
+
+				for(auto& tri : clipped)
+					listTriangle.push_back(tri);
+			}
+			nNewTriangles = listTriangle.size();
+		}
+		*/
+		
+
+		/*
+		for (auto& tri : listTriangle)
+			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, original_t.bFill);
+			*/
+
+
+		/*
 		CKgTriangle triangle(vertex_list[vertex_indexs[0]], vertex_list[vertex_indexs[1]], vertex_list[vertex_indexs[2]], true);
 
 		auto ViewMatrix = dmatrix(4, 4);
@@ -315,8 +456,6 @@ void CKhuGle3DSprite::Render()
 			free_dmatrix(TriangleMatrix, 4, 4);
 			continue;
 		}
-			
-		
 		// end check condition
 
 
@@ -362,7 +501,7 @@ void CKhuGle3DSprite::Render()
 		std::list<CKgTriangle> listTriangle;
 
 		listTriangle.push_back(original_t);
-		int nNewTriangles = 1;
+		/*int nNewTriangles = 1;
 		for(int i=0; i< 4; i++)
 		{
 			int nTrisToAdd = 0;
@@ -387,14 +526,15 @@ void CKhuGle3DSprite::Render()
 			}
 			nNewTriangles = listTriangle.size();
 		}
+		#1#
 
-		for(auto& tri : listTriangle)
-			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, triangle.bFill);
+		for (auto& tri : listTriangle)
+			;// DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, triangle.bFill);
 		
 		free_dmatrix(ViewMatrix, 4, 4);
 		free_dmatrix(worldPosMat, 4, 4);
 		free_dmatrix(ProjectionMat, 4, 4);
-		free_dmatrix(TriangleMatrix, 4, 4);
+		free_dmatrix(TriangleMatrix, 4, 4);*/
 	}
 }
 
