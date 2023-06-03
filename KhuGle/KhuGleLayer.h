@@ -27,7 +27,5 @@ public:
 	void SetBgColor(KgColor24 bgColor);
 
 	virtual void Render();
-	virtual std::vector<double> getRenderInform();
-	virtual void newRender();
 };
 

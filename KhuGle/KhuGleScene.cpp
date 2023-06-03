@@ -102,10 +102,3 @@ void CKhuGleScene::Render()
 		}
 	}
 }
-
-std::vector<double> CKhuGleScene::getRenderInform()
-{
-	return std::vector<double>(0, 0.);
-
-}
-

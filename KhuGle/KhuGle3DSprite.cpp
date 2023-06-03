@@ -1,5 +1,4 @@
-﻿
-#include "KhuGle3DSprite.h"
+﻿#include "KhuGle3DSprite.h"
 #include "KhuGleBase.h"
 #include <iostream>
 #include <fstream>
@@ -12,7 +11,8 @@ CKhuGle3DObject::CKhuGle3DObject(KgColor24 fgColor, CKgVector3D pWorldPos)
 	m_fgColor = fgColor;
 	m_WorldPos = pWorldPos;
 
-	rx = 0.;ry = 0.;rz = 0.;
+	rx = 0.; ry = 0.; rz = 0.;
+	sx = 1.; sy = 1.; sz = 1.;
 
 	m_rotation_matrix = dmatrix(4, 4);
 	for (int r = 0; r < 4; ++r)
@@ -24,6 +24,44 @@ CKhuGle3DObject::~CKhuGle3DObject() {
 	free_dmatrix(m_projection_matrix, 4, 4);
 	free_dmatrix(m_rotation_matrix, 4, 4);
 };
+
+void CKhuGle3DObject::MoveBy(double OffsetX, double OffsetY, double OffsetZ)
+{
+	m_WorldPos += CKgVector3D(OffsetX, OffsetY, OffsetZ);
+}
+
+void CKhuGle3DObject::RotateBy(double dRadianX, double dRadianY, double dRadianZ)
+{
+	double c_x, c_y, c_z, s_x, s_y, s_z;
+	rx = std::fmod((rx + dRadianX), 2 * Pi);
+	ry = std::fmod((ry + dRadianY), 2 * Pi);
+	rz = std::fmod((rz + dRadianZ), 2 * Pi);
+	c_x = cos(rx);
+	c_y = cos(ry);
+	c_z = cos(rz);
+	s_x = sin(rx);
+	s_y = sin(ry);
+	s_z = sin(rz);
+
+	m_rotation_matrix[0][0] = c_z * c_y;
+	m_rotation_matrix[1][0] = s_z * c_y;
+	m_rotation_matrix[2][0] = -s_y;
+	m_rotation_matrix[3][0] = 0.;
+	m_rotation_matrix[0][1] = -s_z * c_x + c_z * s_y * s_x;
+	m_rotation_matrix[1][1] = c_z * c_x + s_z * s_y * s_x;
+	m_rotation_matrix[2][1] = c_y * s_x;
+	m_rotation_matrix[3][1] = 0.;
+	m_rotation_matrix[0][2] = s_z * s_x + c_z * s_y * c_x;
+	m_rotation_matrix[1][2] = -c_z * s_x + s_z * s_y * c_x;
+	m_rotation_matrix[2][2] = c_y * c_x;
+	m_rotation_matrix[3][2] = 0.;
+	m_rotation_matrix[0][3] = 0.;
+	m_rotation_matrix[1][3] = 0.;
+	m_rotation_matrix[2][3] = 0.;
+	m_rotation_matrix[3][3] = 1.;
+
+}
+
 
 CKhuGleCamera::CKhuGleCamera(int nW, int nH, double Fov, double Far, double Near, const CKgVector3D& m_position, const CKgVector3D& m_forward, const CKgVector3D& m_up)
 	: CKhuGle3DObject(KG_COLOR_24_RGB(255, 255, 255), m_position), m_forward_base(m_forward), m_forward(m_forward), m_up(m_up)
@@ -56,40 +94,13 @@ CKhuGleCamera::~CKhuGleCamera()
 
 void CKhuGleCamera::MoveBy(double OffsetX, double OffsetY, double OffsetZ)
 {
-	m_WorldPos += CKgVector3D(OffsetX, OffsetY, OffsetZ);
+	CKhuGle3DObject::MoveBy(OffsetX, OffsetY, OffsetZ);
 	m_view_matrix = ComputeViewMatrix();
 }
 
 void CKhuGleCamera::RotateBy(double dRadianX, double dRadianY, double dRadianZ)
 {
-	double c_x, c_y, c_z, s_x, s_y, s_z;
-	rx += dRadianX;
-	ry += dRadianY;
-	rz += dRadianZ;
-	c_x = cos(rx);
-	c_y = cos(ry);
-	c_z = cos(rz);
-	s_x = sin(rx);
-	s_y = sin(ry);
-	s_z = sin(rz);
-
-	m_rotation_matrix[0][0] = c_z * c_y;
-	m_rotation_matrix[1][0] = s_z * c_y;
-	m_rotation_matrix[2][0] = -s_y;
-	m_rotation_matrix[3][0] = 0.;
-	m_rotation_matrix[0][1] = -s_z * c_x + c_z * s_y * s_x;
-	m_rotation_matrix[1][1] = c_z * c_x + s_z * s_y * s_x;
-	m_rotation_matrix[2][1] = c_y * s_x;
-	m_rotation_matrix[3][1] = 0.;
-	m_rotation_matrix[0][2] = s_z * s_x + c_z * s_y * c_x;
-	m_rotation_matrix[1][2] = -c_z * s_x + s_z * s_y * c_x;
-	m_rotation_matrix[2][2] = c_y * c_x;
-	m_rotation_matrix[3][2] = 0.;
-	m_rotation_matrix[0][3] = 0.;
-	m_rotation_matrix[1][3] = 0.;
-	m_rotation_matrix[2][3] = 0.;
-	m_rotation_matrix[3][3] = 1.;
-
+	CKhuGle3DObject::RotateBy(dRadianX, dRadianY, dRadianZ);
 
 	MatrixVector44(m_forward, m_forward_base, m_rotation_matrix);
 	m_forward.Normalize();
@@ -151,34 +162,17 @@ void CKhuGle3DObject::MatrixVector44(CKgVector3D& out, CKgVector3D v, double** M
 		out = (1. / w) * out;
 }
 
-std::vector<double> CKhuGle3DObject::getRenderInform()
-{
-	return std::vector<double>(0, 0.);
-}
-
 CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKhuGleCamera* c, char* FilePath) : m_camera(c), CKhuGle3DObject(fgColor, pWorldPos)
 {
-	ReadObj(FilePath, vertex_list, triangle_list);
+	std::vector<std::vector<double>> local_locations;
+	ReadObj(FilePath, local_locations, triangle_list);
 
 	m_nType = GP_3DTYPE_TRIANGLE;
 
-	for(auto& vertex_numbers : triangle_list)
+	for(auto& locations : local_locations)
 	{
-		CKgVector3D v0(vertex_list[vertex_numbers[0]][0], vertex_list[vertex_numbers[0]][1], vertex_list[vertex_numbers[0]][2]);
-		CKgVector3D v1(vertex_list[vertex_numbers[1]][0], vertex_list[vertex_numbers[1]][1], vertex_list[vertex_numbers[1]][2]);
-		CKgVector3D v2(vertex_list[vertex_numbers[2]][0], vertex_list[vertex_numbers[2]][1], vertex_list[vertex_numbers[2]][2]);
-
-		SurfaceMesh.push_back(CKgTriangle(v0, v1, v2, true));
+		vertex_list.push_back(CKgVector3D(locations[0], locations[1], locations[2]));
 	}
-}
-
-CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKgVector3D Line, CKhuGleCamera* c) : CKhuGle3DObject(fgColor, pWorldPos)
-{
-	m_camera = c;
-	m_nType = GP_3DTYPE_LINE;
-	m_Line = Line;
-	CKgTriangle linetri(Line, CKgVector3D(0,0,0), CKgVector3D(0, 0, 0), false);
-	SurfaceMesh.push_back(linetri);
 }
 
 CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, std::vector<CKgTriangle> pTriangleMeshes, CKhuGleCamera* c) : CKhuGle3DObject(fgColor, pWorldPos)
@@ -240,48 +234,12 @@ void CKhuGle3DSprite::ReadObj(char* FilePath, std::vector<std::vector<double>>& 
 	std::cout <<"Obj FIle load success : " << FilePath << std::endl;
 }
 
-
 void CKhuGle3DSprite::DrawTriangle(unsigned char** R, unsigned char** G, unsigned char** B, int nW, int nH,
 	int x0, int y0, int x1, int y1, int x2, int y2, KgColor24 Color24)
 {
-
 	CKhuGleSprite::DrawLine(R, G, B, nW, nH, x0, y0, x1, y1, Color24);
 	CKhuGleSprite::DrawLine(R, G, B, nW, nH, x1, y1, x2, y2, Color24);
 	CKhuGleSprite::DrawLine(R, G, B, nW, nH, x2, y2, x0, y0, Color24);
-}
-
-
-void CKhuGle3DSprite::MoveBy(double OffsetX, double OffsetY, double OffsetZ)
-{
-	m_WorldPos += CKgVector3D(OffsetX, OffsetY, OffsetZ);
-}
-
-
-void CKhuGle3DSprite::RotateBy(double RadianX, double RadianY, double RadianZ)
-{
-	double c_x, c_y, c_z, s_x, s_y, s_z;
-	rx = std::fmod((rx + RadianX), 2*Pi);
-	ry = std::fmod((ry + RadianY), 2*Pi);
-	rz = std::fmod((rz + RadianZ), 2*Pi);
-	c_x = cos(rx); c_y = cos(ry); c_z = cos(rz);
-	s_x = sin(rx); s_y = sin(ry); s_z = sin(rz);
-
-	m_rotation_matrix[0][0] = c_z * c_y;
-	m_rotation_matrix[1][0] = s_z * c_y;
-	m_rotation_matrix[2][0] = -s_y;
-	m_rotation_matrix[3][0] = 0.;
-	m_rotation_matrix[0][1] = -s_z * c_x + c_z * s_y * s_x;
-	m_rotation_matrix[1][1] = c_z * c_x + s_z * s_y * s_x;
-	m_rotation_matrix[2][1] = c_y * s_x;
-	m_rotation_matrix[3][1] = 0.;
-	m_rotation_matrix[0][2] = s_z * s_x + c_z * s_y * c_x;
-	m_rotation_matrix[1][2] = -c_z * s_x + s_z * s_y * c_x;
-	m_rotation_matrix[2][2] = c_y * c_x;
-	m_rotation_matrix[3][2] = 0.;
-	m_rotation_matrix[0][3] = 0.;
-	m_rotation_matrix[1][3] = 0.;
-	m_rotation_matrix[2][3] = 0.;
-	m_rotation_matrix[3][3] = 1.;
 }
 
 void CKhuGle3DSprite::Render()
@@ -293,30 +251,33 @@ void CKhuGle3DSprite::Render()
 
 	// local position --(transform matrix)-> worldPos --(condition check, View, Projection)-> drawLine
 	
-	for (auto& triangle : SurfaceMesh)
+	for (auto& vertex_indexs : triangle_list)
 	{
+		
+		CKgTriangle triangle(vertex_list[vertex_indexs[0]], vertex_list[vertex_indexs[1]], vertex_list[vertex_indexs[2]], true);
+
+		auto ViewMatrix = dmatrix(4, 4);
 		auto worldPosMat = dmatrix(4, 4);
 		auto ProjectionMat = dmatrix(4, 4);
 		auto TriangleMatrix = dmatrix(4, 4);
 
-		TriangleMatrix[0][0] = triangle.v0.x;
-		TriangleMatrix[1][0] = triangle.v0.y;
-		TriangleMatrix[2][0] = triangle.v0.z;
+		// Scale
+		TriangleMatrix[0][0] = triangle.v0.x * sx;
+		TriangleMatrix[1][0] = triangle.v0.y * sy;
+		TriangleMatrix[2][0] = triangle.v0.z * sz;
 		TriangleMatrix[3][0] = 1.;
-		TriangleMatrix[0][1] = triangle.v1.x;
-		TriangleMatrix[1][1] = triangle.v1.y;
-		TriangleMatrix[2][1] = triangle.v1.z;
+		TriangleMatrix[0][1] = triangle.v1.x * sx;
+		TriangleMatrix[1][1] = triangle.v1.y * sy;
+		TriangleMatrix[2][1] = triangle.v1.z * sz;
 		TriangleMatrix[3][1] = 1.;
-		TriangleMatrix[0][2] = triangle.v2.x;
-		TriangleMatrix[1][2] = triangle.v2.y;
-		TriangleMatrix[2][2] = triangle.v2.z;
+		TriangleMatrix[0][2] = triangle.v2.x * sx;
+		TriangleMatrix[1][2] = triangle.v2.y * sy;
+		TriangleMatrix[2][2] = triangle.v2.z * sz;
 		TriangleMatrix[3][2] = 1.;
 		TriangleMatrix[0][3] = 0.;
 		TriangleMatrix[1][3] = 0.;
 		TriangleMatrix[2][3] = 0.;
 		TriangleMatrix[3][3] = 0.;
-
-		// Scale  WIP
 
 		// Rotation
 		MatrixMultiply44(worldPosMat, m_rotation_matrix, TriangleMatrix);
@@ -334,27 +295,44 @@ void CKhuGle3DSprite::Render()
 		Side1 = { worldPosMat[0][1] - worldPosMat[0][0], worldPosMat[1][1] - worldPosMat[1][0], worldPosMat[2][1] - worldPosMat[2][0]};
 		Side2 = { worldPosMat[0][2] - worldPosMat[0][0], worldPosMat[1][2] - worldPosMat[1][0], worldPosMat[2][2] - worldPosMat[2][0]};
 
+		
 		Normal = Side2.Cross(Side1);
 		Normal.Normalize();
 
+		
 		CKgVector3D Forward = m_camera->m_forward;
 
-		Forward.Normalize();
 
 		// Depth culling 
 		CKgVector3D v0(worldPosMat[0][0], worldPosMat[1][0], worldPosMat[2][0]);
 
+		
 		if (Normal.Dot(v0 - m_camera->m_WorldPos) > 0)
+		{
+			free_dmatrix(ViewMatrix, 4, 4);
+			free_dmatrix(worldPosMat, 4, 4);
+			free_dmatrix(ProjectionMat, 4, 4);
+			free_dmatrix(TriangleMatrix, 4, 4);
 			continue;
+		}
+			
+		
 		// end check condition
 
+
 		// World -> View
-		auto ViewMatrix = dmatrix(4, 4);
 		MatrixMultiply44(ViewMatrix, m_camera->m_view_matrix, worldPosMat);
 
+		
 		// Depth Clipping 
 		if (ViewMatrix[2][0] < 0 || ViewMatrix[2][1] < 0 || ViewMatrix[2][2] < 0) // < m_camera->near
+		{
+			free_dmatrix(ViewMatrix, 4, 4);
+			free_dmatrix(worldPosMat, 4, 4);
+			free_dmatrix(ProjectionMat, 4, 4);
+			free_dmatrix(TriangleMatrix, 4, 4);
 			continue;
+		}
 
 		// View -> Projection 
 		MatrixMultiply44(ProjectionMat, m_camera->m_projection_matrix, ViewMatrix);
@@ -371,6 +349,8 @@ void CKhuGle3DSprite::Render()
 			ProjectionMat[1][i] *= Parent->m_nW / 2.;
 		//	ProjectionMat[2][i] *= Parent->m_nW / 2.;
 		}
+		
+		
 
 
 		// Triangle clipping
@@ -409,9 +389,12 @@ void CKhuGle3DSprite::Render()
 		}
 
 		for(auto& tri : listTriangle)
-		{
 			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, triangle.bFill);
-		}
+		
+		free_dmatrix(ViewMatrix, 4, 4);
+		free_dmatrix(worldPosMat, 4, 4);
+		free_dmatrix(ProjectionMat, 4, 4);
+		free_dmatrix(TriangleMatrix, 4, 4);
 	}
 }
 

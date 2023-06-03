@@ -30,7 +30,8 @@ public:
 	std::vector<CKgTriangle> SurfaceMesh;
 	double** m_projection_matrix;
 	double** m_rotation_matrix;
-	double rx, ry, rz;
+	double rx, ry, rz; // rotation
+	double sx, sy, sz; // scale
 
 	CKgVector3D m_WorldPos;
 
@@ -41,8 +42,7 @@ public:
 		int x0, int y0, int x1, int y1, int x2, int y2, KgColor24 Color24);
 
 	static void MatrixVector44(CKgVector3D& out, CKgVector3D v, double** M);
-
-	virtual std::vector<double> getRenderInform();
+	
 	void MoveBy(double OffsetX, double OffsetY, double OffsetZ);
 	void RotateBy(double RadianX, double RadianY, double RadianZ);
 };
@@ -56,7 +56,6 @@ public:
 
 	double** m_view_matrix;
 	double** m_projection_matrix;
-	//double** m_view_projection_matrix;
 	
 	CKhuGleCamera(int nW, int nH, double Fov, double Far, double Near, const CKgVector3D& m_position, const CKgVector3D& m_forward, const CKgVector3D& m_up);
 	~CKhuGleCamera();
@@ -71,25 +70,21 @@ class CKhuGle3DSprite : public CKhuGle3DObject
 {
 public:
 	CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKhuGleCamera* c, char* FilePath);
-	CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKgVector3D Line, CKhuGleCamera* c);
 	CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, std::vector<CKgTriangle> pTriangleMeshes, CKhuGleCamera* c);
 	~CKhuGle3DSprite();
 
 	CKhuGleCamera* m_camera;
 
-	CKgVector3D m_Line;
 
-	std::vector<std::vector<double>> vertex_list;
+	std::vector<CKgVector3D> vertex_list;
 	std::vector<std::vector<int>> triangle_list;
 
-	std::vector<render_inform> Render(CKgVector3D object_position, double** ViewProjectionMatrix, CKgTriangle triangle) const;
 	void Render();
 	static void DrawTriangle(unsigned char** R, unsigned char** G, unsigned char** B, int nW, int nH,
 		int x0, int y0, int x1, int y1, int x2, int y2, KgColor24 Color24);
 
-	//	void Render();
-	void MoveBy(double OffsetX, double OffsetY, double OffsetZ);
-	void RotateBy(double RadianX, double RadianY, double RadianZ);
+	//void MoveBy(double OffsetX, double OffsetY, double OffsetZ);
+	//void RotateBy(double RadianX, double RadianY, double RadianZ);
 
 	void ReadObj(char* FilePath, std::vector<std::vector<double>>& vertex_list, std::vector<std::vector<int>>& triangle_list);
 };

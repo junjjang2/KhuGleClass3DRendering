@@ -78,7 +78,6 @@ void CKhuGleLayer::ResetBackgroundImage()
 
 		m_bInit = false;
 	}
-
 }
 
 void CKhuGleLayer::SetBgColor(KgColor24 bgColor)
@@ -103,25 +102,4 @@ void CKhuGleLayer::Render()
 
 	for(auto &Child : m_Children)
 		Child->Render();
-}
-
-void CKhuGleLayer::newRender()
-{
-	int y;
-	for (y = 0; y < m_nH; y++)
-	{
-		memcpy(m_ImageR[y], m_ImageBgR[y], m_nW);
-		memcpy(m_ImageG[y], m_ImageBgG[y], m_nW);
-		memcpy(m_ImageB[y], m_ImageBgB[y], m_nW);
-	}
-	std::vector<std::vector<double>> job_list;
-	for (auto& Child : m_Children) {
-		job_list.push_back(Child->getRenderInform());
-	}
-
-}
-std::vector<double> CKhuGleLayer::getRenderInform()
-{
-	return std::vector<double>(0, 0.);
-
 }

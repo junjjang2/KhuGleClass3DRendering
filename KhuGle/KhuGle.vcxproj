@@ -146,7 +146,6 @@
     <ClCompile Include="KhuGleBase.cpp" />
     <ClCompile Include="KhuGleComponent.cpp" />
     <ClCompile Include="KhuGleLayer.cpp" />
-    <ClCompile Include="KhuGleRenderingEngine.cpp" />
     <ClCompile Include="KhuGleScene.cpp" />
     <ClCompile Include="KhuGleSprite.cpp" />
     <ClCompile Include="KhuGleWin.cpp" />
@@ -157,7 +156,6 @@
     <ClInclude Include="KhuGleBase.h" />
     <ClInclude Include="KhuGleComponent.h" />
     <ClInclude Include="KhuGleLayer.h" />
-    <ClInclude Include="KhuGleRenderingEngine.h" />
     <ClInclude Include="KhuGleScene.h" />
     <ClInclude Include="KhuGleSprite.h" />
     <ClInclude Include="KhuGleWin.h" />

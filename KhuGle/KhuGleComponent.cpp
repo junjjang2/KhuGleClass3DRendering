@@ -34,8 +34,3 @@ void CKhuGleComponent::AddChild(CKhuGleComponent *pChild)
 
 	m_Children.push_back(pChild);
 }
-
-std::vector<double> CKhuGleComponent::getRenderInform()
-{
-	return std::vector<double>(0, 0.);
-}
