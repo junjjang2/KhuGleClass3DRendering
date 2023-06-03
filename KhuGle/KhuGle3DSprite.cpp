@@ -250,7 +250,9 @@ void CKhuGle3DSprite::Render()
 
 
 	// local position --(transform matrix)-> worldPos --(condition check, View, Projection)-> drawLine
-
+	int non_rendered = 0;
+	int z_clipped = 0;
+	int rendered = 0;
 	for (auto& vertex_indexs : triangle_list)
 	{
 		CKgVector3D v0 = vertex_list[vertex_indexs[0]];
@@ -277,17 +279,9 @@ void CKhuGle3DSprite::Render()
 		MatrixVector44(rotated_v2, v2, m_rotation_matrix);
 
 		// Translation
-		rotated_v0.x += m_WorldPos.x;
-		rotated_v0.y += m_WorldPos.y;
-		rotated_v0.z += m_WorldPos.z;
-
-		rotated_v1.x += m_WorldPos.x;
-		rotated_v1.y += m_WorldPos.y;
-		rotated_v1.z += m_WorldPos.z;
-
-		rotated_v2.x += m_WorldPos.x;
-		rotated_v2.y += m_WorldPos.y;
-		rotated_v2.z += m_WorldPos.z;
+		rotated_v0 += m_WorldPos;
+		rotated_v1 += m_WorldPos;
+		rotated_v2 += m_WorldPos;
 
 		//// check condition
 		CKgVector3D Side1, Side2, Normal;
@@ -299,8 +293,12 @@ void CKhuGle3DSprite::Render()
 
 		// culling 
 		if (Normal.Dot(v0 - m_camera->m_WorldPos) > 0)
+		{
+			non_rendered++;
 			continue;
-		
+
+		}
+			
 		//// end check condition
 
 		// World -> View
@@ -311,8 +309,10 @@ void CKhuGle3DSprite::Render()
 
 		// Depth Clipping 
 		if (v0.z < 0 || v0.z < 0 || v0.z < 0) // < m_camera->near
+		{
+			z_clipped++;
 			continue;
-		
+		}
 
 		// View -> Projection
 		CKgVector3D projected_v0, projected_v1, projected_v2;
@@ -346,53 +346,59 @@ void CKhuGle3DSprite::Render()
 		//	ProjectionMat[2][i] *= Parent->m_nW / 2.;
 		*/
 
-		/*
 		// Triangle clipping
-		CKgTriangle original_t(projected_v0, projected_v1, projected_v2, true);
 
-		// 그다음 여기
-		std::vector<CKgTriangle> clipped;
-
-		std::list<CKgTriangle> listTriangle;
-		
-
-		
-		listTriangle.push_back(original_t);
-		int nNewTriangles = 1;
-
-		// 여기가 가장 오래 걸림
-		for(int i=0; i< 4; i++)
-		{
-			int nTrisToAdd = 0;
-			while(nNewTriangles > 0)
-			{
-				clipped.clear();
-
-				CKgTriangle temp = listTriangle.front();
-				listTriangle.pop_front();
-				nNewTriangles--;
-
-				switch(i)
-				{
-				case 0: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(0, 1, 0), temp, clipped); break;
-				case 1: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, Parent->m_nH-1, 0), CKgVector3D(0, -1, 0), temp, clipped); break;
-				case 2: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(1, 0, 0), temp, clipped); break;
-				case 3: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(Parent->m_nW-1, 0, 0), CKgVector3D(-1, 0, 0), temp, clipped); break;
-				}
-
-				for(auto& tri : clipped)
-					listTriangle.push_back(tri);
-			}
-			nNewTriangles = listTriangle.size();
+		if (!(projected_v0.x < 0 || projected_v0.x > Parent->m_nW - 1 || projected_v1.x < 0 || projected_v1.x > Parent->m_nW - 1 ||
+			projected_v0.y < 0 || projected_v0.y > Parent->m_nH - 1 || projected_v1.y < 0 || projected_v1.y > Parent->m_nH - 1)){
+			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)projected_v0.x, (int)projected_v0.y, projected_v0.z, (int)projected_v1.x, (int)projected_v1.y, projected_v1.z, (int)projected_v2.x, (int)projected_v2.y, projected_v2.z, m_fgColor, true);
+			rendered++;
 		}
-		*/
+		else
+		{
+			CKgTriangle original_t(projected_v0, projected_v1, projected_v2, true);
+
+			std::vector<CKgTriangle> clipped;
+			std::list<CKgTriangle> listTriangle;
+
+			listTriangle.push_back(original_t);
+			int nNewTriangles = 1;
+
+			// 여기가 가장 오래 걸림
+			for (int i = 0; i < 4; i++)
+			{
+				int nTrisToAdd = 0;
+				while (nNewTriangles > 0)
+				{
+					clipped.clear();
+
+					CKgTriangle temp = listTriangle.front();
+					listTriangle.pop_front();
+					nNewTriangles--;
+
+					switch (i)
+					{
+					case 0: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(0, 1, 0), temp, clipped); break;
+					case 1: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, Parent->m_nH - 1, 0), CKgVector3D(0, -1, 0), temp, clipped); break;
+					case 2: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(1, 0, 0), temp, clipped); break;
+					case 3: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(Parent->m_nW - 1, 0, 0), CKgVector3D(-1, 0, 0), temp, clipped); break;
+					}
+
+					for (auto& tri : clipped)
+						listTriangle.push_back(tri);
+				}
+				nNewTriangles = listTriangle.size();
+			}
+
+
+			for (auto& tri : listTriangle)
+			{
+				rendered++;
+				DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, original_t.bFill);
+			}
+		}
+
 		
-
-		/*
-		for (auto& tri : listTriangle)
-			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, original_t.bFill);
-			*/
-
+			
 
 		/*
 		CKgTriangle triangle(vertex_list[vertex_indexs[0]], vertex_list[vertex_indexs[1]], vertex_list[vertex_indexs[2]], true);
@@ -536,5 +542,8 @@ void CKhuGle3DSprite::Render()
 		free_dmatrix(ProjectionMat, 4, 4);
 		free_dmatrix(TriangleMatrix, 4, 4);*/
 	}
+
+	std::cout << "non-rendered: " <<  non_rendered << " z-clipped: " << z_clipped<< " rendered: " << rendered << std::endl;
+
 }
 
