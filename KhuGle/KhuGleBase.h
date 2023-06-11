@@ -79,6 +79,7 @@ public:
 
 	CKgVector3D() : x(0.), y(0.), z(0.), w(1.) {}
 	CKgVector3D(double xx, double yy, double zz) : x(xx), y(yy), z(zz), w(1.) {}
+	CKgVector3D(double xx, double yy, double zz, double ww) : x(xx), y(yy), z(zz), w(ww) {}
 
 	static double abs(CKgVector3D v);
 	void Normalize();

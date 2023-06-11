@@ -48,7 +48,7 @@ CThreeDim::CThreeDim(int nW, int nH) : CKhuGleWin(nW, nH)
 	m_pGameLayer = new CKhuGleLayer(600, 420, KG_COLOR_24_RGB(150, 150, 200), CKgPoint(20, 30));
 	m_pScene->AddChild(m_pGameLayer);
 
-	m_camera = new CKhuGleCamera(m_pGameLayer->m_nW, m_pGameLayer->m_nH, Pi / 2.5, 1000, 0.1, CKgVector3D(1200., 0., 1200.), CKgVector3D(-1., 0., -1.), CKgVector3D(0., -1., 0.));
+	m_camera = new CKhuGleCamera(m_pGameLayer->m_nW, m_pGameLayer->m_nH, Pi / 2.5, 1000, 0.1, CKgVector3D(12., 0., 12.), CKgVector3D(-1., 0., -1.), CKgVector3D(0., -1., 0.));
 	//m_camera = new CKhuGleCamera(m_pGameLayer->m_nW, m_pGameLayer->m_nH, Pi / 2., 1000, 0.1, CKgVector3D(0., 0., 2.), CKgVector3D(0., 0., -1.), CKgVector3D(0., 1., 0.));
 
 	
@@ -58,9 +58,9 @@ CThreeDim::CThreeDim(int nW, int nH) : CKhuGleWin(nW, nH)
 	m_p_Axis_Y->RotateBy(0, 0, Pi / 2);
 	m_p_Axis_Z->RotateBy(0, -Pi/2, 0.);
 
-	m_pGameLayer->AddChild(m_p_Axis_X);
+	/*m_pGameLayer->AddChild(m_p_Axis_X);
 	m_pGameLayer->AddChild(m_p_Axis_Y);
-	m_pGameLayer->AddChild(m_p_Axis_Z);
+	m_pGameLayer->AddChild(m_p_Axis_Z);*/
 }
 
 CKhuGle3DSprite* CThreeDim::AddObject(KgColor24 color, CKgVector3D worldPos, char* FilePath)
@@ -131,15 +131,17 @@ int main()
 {
 	CThreeDim *pThreeDim = new CThreeDim(640, 480);
 
-	/*pThreeDim->AddObject(KG_COLOR_24_RGB(255, 0, 255), CKgVector3D(0, 0, 0), "asd.obj");
+	//pThreeDim->AddObject(KG_COLOR_24_RGB(255, 0, 255), CKgVector3D(0, 0, 0), "asd.obj");
 
 	auto m_pShip = pThreeDim->AddObject(KG_COLOR_24_RGB(255, 0, 255), CKgVector3D(0, 0, 0), "VideoShip.obj");
 	m_pShip->RotateBy(-Pi / 2, Pi/2, 0);
 
-	pThreeDim->AddObject(KG_COLOR_24_RGB(255, 0, 255), CKgVector3D(0, 0, 0), "asd.obj");
-	*/
+	//pThreeDim->AddObject(KG_COLOR_24_RGB(255, 0, 255), CKgVector3D(0, 0, 0), "asd.obj");
+
+	/*
 	auto m_IronMan = pThreeDim->AddObject(KG_COLOR_24_RGB(255, 255, 255), CKgVector3D(0, 0, 0), "IronMan.obj");
-	m_IronMan->RotateBy(0, Pi / 2, Pi / 2);
+	m_IronMan->RotateBy(0, Pi / 4, 0);
+	*/
 	
 
 	KhuGleWinInit(pThreeDim);

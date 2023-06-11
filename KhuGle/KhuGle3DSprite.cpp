@@ -152,14 +152,13 @@ double** CKhuGleCamera::ComputeViewMatrix()
 
 void CKhuGle3DObject::MatrixVector44(CKgVector3D& out, CKgVector3D v, double** M)
 {
-	out.x = v.x * M[0][0] + v.y * M[0][1] + v.z * M[0][2] + M[0][3];
-	out.y = v.x * M[1][0] + v.y * M[1][1] + v.z * M[1][2] + M[1][3];
-	out.z = v.x * M[2][0] + v.y * M[2][1] + v.z * M[2][2] + M[2][3];
+	out.x = v.x * M[0][0] + v.y * M[0][1] + v.z * M[0][2] + v.w * M[0][3];
+	out.y = v.x * M[1][0] + v.y * M[1][1] + v.z * M[1][2] + v.w * M[1][3];
+	out.z = v.x * M[2][0] + v.y * M[2][1] + v.z * M[2][2] + v.w * M[2][3];
+	out.w = v.x * M[3][0] + v.y * M[3][1] + v.z * M[3][2] + v.w * M[3][3];
 
-	double w = v.x * M[3][0] + v.y * M[3][1] + v.z * M[3][2] + M[3][3];
-
-	if (fabs(w) > 0)
-		out = (1. / w) * out;
+	/*if (fabs(out.w) > 0)
+		out = (1. / out.w) * out;*/
 }
 
 CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKhuGleCamera* c, char* FilePath) : m_camera(c), CKhuGle3DObject(fgColor, pWorldPos)
@@ -167,18 +166,14 @@ CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKhuG
 	std::vector<std::vector<double>> local_locations;
 	ReadObj(FilePath, local_locations, triangle_list);
 
-	m_nType = GP_3DTYPE_TRIANGLE;
-
 	for(auto& locations : local_locations)
 	{
 		vertex_list.push_back(CKgVector3D(locations[0], locations[1], locations[2]));
 	}
 }
 
-CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, std::vector<CKgTriangle> pTriangleMeshes, CKhuGleCamera* c) : CKhuGle3DObject(fgColor, pWorldPos)
+CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, std::vector<CKgTriangle>& pTriangleMeshes, CKhuGleCamera* c) : m_camera(c), CKhuGle3DObject(fgColor, pWorldPos)
 {
-	m_camera = c;
-	m_nType = GP_3DTYPE_TRIANGLE;
 	for (auto& triangle : pTriangleMeshes)
 	{
 		SurfaceMesh.push_back(triangle);
@@ -248,11 +243,12 @@ void CKhuGle3DSprite::Render()
 
 	CKhuGleLayer* Parent = (CKhuGleLayer*)m_Parent;
 
-
 	// local position --(transform matrix)-> worldPos --(condition check, View, Projection)-> drawLine
 	int non_rendered = 0;
 	int z_clipped = 0;
 	int rendered = 0;
+	int clipped_rendered = 0;
+
 	for (auto& vertex_indexs : triangle_list)
 	{
 		CKgVector3D v0 = vertex_list[vertex_indexs[0]];
@@ -273,42 +269,41 @@ void CKhuGle3DSprite::Render()
 		v2.z *= sz;
 
 		// Rotation
-		CKgVector3D rotated_v0, rotated_v1, rotated_v2;
-		MatrixVector44(rotated_v0, v0, m_rotation_matrix);
-		MatrixVector44(rotated_v1, v1, m_rotation_matrix);
-		MatrixVector44(rotated_v2, v2, m_rotation_matrix);
+		CKgVector3D world_v0, world_v1, world_v2;
+		MatrixVector44(world_v0, v0, m_rotation_matrix);
+		MatrixVector44(world_v1, v1, m_rotation_matrix);
+		MatrixVector44(world_v2, v2, m_rotation_matrix);
 
 		// Translation
-		rotated_v0 += m_WorldPos;
-		rotated_v1 += m_WorldPos;
-		rotated_v2 += m_WorldPos;
+		world_v0 += m_WorldPos;
+		world_v1 += m_WorldPos;
+		world_v2 += m_WorldPos;
 
 		//// check condition
 		CKgVector3D Side1, Side2, Normal;
-		Side1 = rotated_v1 - rotated_v0;
-		Side2 = rotated_v2 - rotated_v0;
+		Side1 = world_v1 - world_v0;
+		Side2 = world_v2 - world_v0;
 
 		Normal = Side2.Cross(Side1);
 		Normal.Normalize();
 
 		// culling 
-		if (Normal.Dot(v0 - m_camera->m_WorldPos) > 0)
+		if (Normal.Dot(world_v0 - m_camera->m_WorldPos) > 0)
 		{
 			non_rendered++;
 			continue;
 
 		}
-			
+
 		//// end check condition
 
 		// World -> View
-		MatrixVector44(v0, rotated_v0, m_camera->m_view_matrix);
-		MatrixVector44(v1, rotated_v1, m_camera->m_view_matrix);
-		MatrixVector44(v2, rotated_v2, m_camera->m_view_matrix);
-
+		MatrixVector44(v0, world_v0, m_camera->m_view_matrix);
+		MatrixVector44(v1, world_v1, m_camera->m_view_matrix);
+		MatrixVector44(v2, world_v2, m_camera->m_view_matrix);
 
 		// Depth Clipping 
-		if (v0.z < 0 || v0.z < 0 || v0.z < 0) // < m_camera->near
+		if (v0.z < 0 || v1.z < 0 || v2.z < 0) // < m_camera->near
 		{
 			z_clipped++;
 			continue;
@@ -322,9 +317,12 @@ void CKhuGle3DSprite::Render()
 		MatrixVector44(projected_v2, v2, m_camera->m_projection_matrix);
 
 
-		/*for (int j = 0; j < 3; j++) {
-			projected_v0.x *= (1. / projected_v0.w);
-		}*/
+		
+		projected_v0 = (1. / projected_v0.w) * projected_v0;
+		projected_v1 = (1. / projected_v1.w) * projected_v1;
+		projected_v2 = (1. / projected_v2.w) * projected_v2;
+
+		// [-1, 1] -> [0, m_nH or m_nW]
 		projected_v0.x += 1;
 		projected_v0.y += 1;
 		projected_v0.x *= Parent->m_nW / 2.;
@@ -340,16 +338,11 @@ void CKhuGle3DSprite::Render()
 		projected_v2.x *= Parent->m_nW / 2.;
 		projected_v2.y *= Parent->m_nW / 2.;
 
-		/*//ProjectionMat[2][i] += 1;
-		ProjectionMat[0][i] *= Parent->m_nW / 2.;
-		ProjectionMat[1][i] *= Parent->m_nW / 2.;
-		//	ProjectionMat[2][i] *= Parent->m_nW / 2.;
-		*/
 
 		// Triangle clipping
-
-		if (!(projected_v0.x < 0 || projected_v0.x > Parent->m_nW - 1 || projected_v1.x < 0 || projected_v1.x > Parent->m_nW - 1 ||
-			projected_v0.y < 0 || projected_v0.y > Parent->m_nH - 1 || projected_v1.y < 0 || projected_v1.y > Parent->m_nH - 1)){
+		if (!(projected_v0.x < 0 || projected_v0.x > Parent->m_nW - 1 || projected_v1.x < 0 || projected_v1.x > Parent->m_nW - 1 || projected_v2.x < 0 || projected_v2.x > Parent->m_nW - 1 ||
+			projected_v0.y < 0 || projected_v0.y > Parent->m_nH - 1 || projected_v1.y < 0 || projected_v1.y > Parent->m_nH - 1 || projected_v2.y < 0 || projected_v2.y > Parent->m_nH - 1
+			)) {
 			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)projected_v0.x, (int)projected_v0.y, projected_v0.z, (int)projected_v1.x, (int)projected_v1.y, projected_v1.z, (int)projected_v2.x, (int)projected_v2.y, projected_v2.z, m_fgColor, true);
 			rendered++;
 		}
@@ -392,158 +385,12 @@ void CKhuGle3DSprite::Render()
 
 			for (auto& tri : listTriangle)
 			{
-				rendered++;
+				clipped_rendered++;
 				DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, original_t.bFill);
 			}
 		}
-
-		
-			
-
-		/*
-		CKgTriangle triangle(vertex_list[vertex_indexs[0]], vertex_list[vertex_indexs[1]], vertex_list[vertex_indexs[2]], true);
-
-		auto ViewMatrix = dmatrix(4, 4);
-		auto worldPosMat = dmatrix(4, 4);
-		auto ProjectionMat = dmatrix(4, 4);
-		auto TriangleMatrix = dmatrix(4, 4);
-
-		// Scale
-		TriangleMatrix[0][0] = triangle.v0.x * sx;
-		TriangleMatrix[1][0] = triangle.v0.y * sy;
-		TriangleMatrix[2][0] = triangle.v0.z * sz;
-		TriangleMatrix[3][0] = 1.;
-		TriangleMatrix[0][1] = triangle.v1.x * sx;
-		TriangleMatrix[1][1] = triangle.v1.y * sy;
-		TriangleMatrix[2][1] = triangle.v1.z * sz;
-		TriangleMatrix[3][1] = 1.;
-		TriangleMatrix[0][2] = triangle.v2.x * sx;
-		TriangleMatrix[1][2] = triangle.v2.y * sy;
-		TriangleMatrix[2][2] = triangle.v2.z * sz;
-		TriangleMatrix[3][2] = 1.;
-		TriangleMatrix[0][3] = 0.;
-		TriangleMatrix[1][3] = 0.;
-		TriangleMatrix[2][3] = 0.;
-		TriangleMatrix[3][3] = 0.;
-
-		// Rotation
-		MatrixMultiply44(worldPosMat, m_rotation_matrix, TriangleMatrix);
-
-		// Translation
-		for (int i = 0; i < 3; i++)
-		{
-			worldPosMat[i][0] += m_WorldPos.x;
-			worldPosMat[i][1] += m_WorldPos.y;
-			worldPosMat[i][2] += m_WorldPos.z;
-		}
-
-		// check condition
-		CKgVector3D Side1, Side2, Normal;
-		Side1 = { worldPosMat[0][1] - worldPosMat[0][0], worldPosMat[1][1] - worldPosMat[1][0], worldPosMat[2][1] - worldPosMat[2][0]};
-		Side2 = { worldPosMat[0][2] - worldPosMat[0][0], worldPosMat[1][2] - worldPosMat[1][0], worldPosMat[2][2] - worldPosMat[2][0]};
-
-		
-		Normal = Side2.Cross(Side1);
-		Normal.Normalize();
-
-		
-		CKgVector3D Forward = m_camera->m_forward;
-
-
-		// Depth culling 
-		CKgVector3D v0(worldPosMat[0][0], worldPosMat[1][0], worldPosMat[2][0]);
-
-		
-		if (Normal.Dot(v0 - m_camera->m_WorldPos) > 0)
-		{
-			free_dmatrix(ViewMatrix, 4, 4);
-			free_dmatrix(worldPosMat, 4, 4);
-			free_dmatrix(ProjectionMat, 4, 4);
-			free_dmatrix(TriangleMatrix, 4, 4);
-			continue;
-		}
-		// end check condition
-
-
-		// World -> View
-		MatrixMultiply44(ViewMatrix, m_camera->m_view_matrix, worldPosMat);
-
-		
-		// Depth Clipping 
-		if (ViewMatrix[2][0] < 0 || ViewMatrix[2][1] < 0 || ViewMatrix[2][2] < 0) // < m_camera->near
-		{
-			free_dmatrix(ViewMatrix, 4, 4);
-			free_dmatrix(worldPosMat, 4, 4);
-			free_dmatrix(ProjectionMat, 4, 4);
-			free_dmatrix(TriangleMatrix, 4, 4);
-			continue;
-		}
-
-		// View -> Projection 
-		MatrixMultiply44(ProjectionMat, m_camera->m_projection_matrix, ViewMatrix);
-		
-		for (int i = 0; i<3; i++)
-		{
-			for (int j = 0; j < 3; j++) {
-				ProjectionMat[j][i] *= (1. / ProjectionMat[3][i]);
-			}
-			ProjectionMat[0][i] += 1;
-			ProjectionMat[1][i] += 1;
-		//	ProjectionMat[2][i] += 1;
-			ProjectionMat[0][i] *= Parent->m_nW / 2.;
-			ProjectionMat[1][i] *= Parent->m_nW / 2.;
-		//	ProjectionMat[2][i] *= Parent->m_nW / 2.;
-		}
-		
-		
-
-
-		// Triangle clipping
-		CKgTriangle original_t(CKgVector3D(ProjectionMat[0][0], ProjectionMat[1][0], ProjectionMat[2][0]), CKgVector3D(ProjectionMat[0][1], ProjectionMat[1][1], ProjectionMat[2][1]), CKgVector3D(ProjectionMat[0][2], ProjectionMat[1][2], ProjectionMat[2][2]), true);
-
-
-		std::vector<CKgTriangle> clipped;
-
-		std::list<CKgTriangle> listTriangle;
-
-		listTriangle.push_back(original_t);
-		/*int nNewTriangles = 1;
-		for(int i=0; i< 4; i++)
-		{
-			int nTrisToAdd = 0;
-			while(nNewTriangles > 0)
-			{
-				clipped.clear();
-
-				CKgTriangle temp = listTriangle.front();
-				listTriangle.pop_front();
-				nNewTriangles--;
-
-				switch(i)
-				{
-				case 0: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(0, 1, 0), temp, clipped); break;
-				case 1: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, Parent->m_nH-1, 0), CKgVector3D(0, -1, 0), temp, clipped); break;
-				case 2: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(0, 0, 0), CKgVector3D(1, 0, 0), temp, clipped); break;
-				case 3: nTrisToAdd = Triangle_ClipAgainstPlain(CKgVector3D(Parent->m_nW-1, 0, 0), CKgVector3D(-1, 0, 0), temp, clipped); break;
-				}
-
-				for(auto& tri : clipped)
-					listTriangle.push_back(tri);
-			}
-			nNewTriangles = listTriangle.size();
-		}
-		#1#
-
-		for (auto& tri : listTriangle)
-			;// DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, triangle.bFill);
-		
-		free_dmatrix(ViewMatrix, 4, 4);
-		free_dmatrix(worldPosMat, 4, 4);
-		free_dmatrix(ProjectionMat, 4, 4);
-		free_dmatrix(TriangleMatrix, 4, 4);*/
 	}
-
-	std::cout << "non-rendered: " <<  non_rendered << " z-clipped: " << z_clipped<< " rendered: " << rendered << std::endl;
+	std::cout << "non-rendered: " <<  non_rendered << " z-clipped: " << z_clipped<< " rendered: " << rendered << " clipped-rendered: " << clipped_rendered << std::endl;
 
 }
 

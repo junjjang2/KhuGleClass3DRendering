@@ -26,7 +26,6 @@ struct render_inform
 class CKhuGle3DObject : public CKhuGleSprite
 {
 public:
-	int m_nType;
 	std::vector<CKgTriangle> SurfaceMesh;
 	double** m_projection_matrix;
 	double** m_rotation_matrix;
@@ -70,12 +69,12 @@ class CKhuGle3DSprite : public CKhuGle3DObject
 {
 public:
 	CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKhuGleCamera* c, char* FilePath);
-	CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, std::vector<CKgTriangle> pTriangleMeshes, CKhuGleCamera* c);
+	CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, std::vector<CKgTriangle>& pTriangleMeshes, CKhuGleCamera* c);
 	~CKhuGle3DSprite();
 
 	CKhuGleCamera* m_camera;
 
-
+	std::vector<CKgVector2D> texture_list;
 	std::vector<CKgVector3D> vertex_list;
 	std::vector<std::vector<int>> triangle_list;
 

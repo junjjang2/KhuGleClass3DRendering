@@ -184,7 +184,7 @@ CKgVector3D &CKgVector3D::operator+= (CKgVector3D v)
 
 CKgVector3D operator*(double s, CKgVector3D v)
 {
-	return CKgVector3D(s*v.x, s*v.y, s*v.z);
+	return CKgVector3D(s*v.x, s*v.y, s*v.z, s*v.w);
 }
 
 unsigned char **cmatrix(int nH, int nW) {
