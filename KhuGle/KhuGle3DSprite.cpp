@@ -62,6 +62,12 @@ void CKhuGle3DObject::RotateBy(double dRadianX, double dRadianY, double dRadianZ
 
 }
 
+void CKhuGle3DObject::ScaleBy(double scaleX, double scaleY, double scaleZ){
+	sx = scaleX;
+	sy = scaleY;
+	sz = scaleZ;
+}
+
 
 CKhuGleCamera::CKhuGleCamera(int nW, int nH, double Fov, double Far, double Near, const CKgVector3D& m_position, const CKgVector3D& m_forward, const CKgVector3D& m_up)
 	: CKhuGle3DObject(KG_COLOR_24_RGB(255, 255, 255), m_position), m_forward_base(m_forward), m_forward(m_forward), m_up(m_up)
@@ -117,8 +123,8 @@ double** CKhuGleCamera::ComputeViewMatrix()
 
 	Forward.Normalize();
 	CameraUp.Normalize();
-	CKgVector3D Right = CameraUp.Cross(Forward);
-	CKgVector3D Up = Forward.Cross(Right);
+	CKgVector3D Right = Forward.Cross(CameraUp);
+	CKgVector3D Up = Right.Cross(Forward);
 
 	double** RT = dmatrix(4, 4);
 	double** View = dmatrix(4, 4);
@@ -163,6 +169,9 @@ void CKhuGle3DObject::MatrixVector44(CKgVector3D& out, CKgVector3D v, double** M
 
 CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKhuGleCamera* c, char* FilePath) : m_camera(c), CKhuGle3DObject(fgColor, pWorldPos)
 {
+	c_map = nullptr;
+	bFill = false;
+
 	std::vector<std::vector<double>> local_locations;
 	ReadObj(FilePath, local_locations, triangle_list);
 
@@ -174,6 +183,9 @@ CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, CKhuG
 
 CKhuGle3DSprite::CKhuGle3DSprite(KgColor24 fgColor, CKgVector3D pWorldPos, std::vector<CKgTriangle>& pTriangleMeshes, CKhuGleCamera* c) : m_camera(c), CKhuGle3DObject(fgColor, pWorldPos)
 {
+	c_map = nullptr;
+	bFill = false;
+
 	for (auto& triangle : pTriangleMeshes)
 	{
 		SurfaceMesh.push_back(triangle);
@@ -239,7 +251,6 @@ void CKhuGle3DSprite::DrawTriangle(unsigned char** R, unsigned char** G, unsigne
 
 void CKhuGle3DSprite::Render()
 {
-	std::vector<render_inform> result;
 
 	CKhuGleLayer* Parent = (CKhuGleLayer*)m_Parent;
 
@@ -251,6 +262,13 @@ void CKhuGle3DSprite::Render()
 
 	for (auto& vertex_indexs : triangle_list)
 	{
+		CKgVector2D t0(0,0), t1(1, 0), t2(0, 1);
+		if (vertex_list.size() == 6)
+		{
+			t0 = texture_list[vertex_indexs[3]];
+			t1 = texture_list[vertex_indexs[4]];
+			t2 = texture_list[vertex_indexs[5]];
+		}
 		CKgVector3D v0 = vertex_list[vertex_indexs[0]];
 		CKgVector3D v1 = vertex_list[vertex_indexs[1]];
 		CKgVector3D v2 = vertex_list[vertex_indexs[2]];
@@ -284,7 +302,7 @@ void CKhuGle3DSprite::Render()
 		Side1 = world_v1 - world_v0;
 		Side2 = world_v2 - world_v0;
 
-		Normal = Side2.Cross(Side1);
+		Normal = Side1.Cross(Side2);
 		Normal.Normalize();
 
 		// culling 
@@ -292,7 +310,6 @@ void CKhuGle3DSprite::Render()
 		{
 			non_rendered++;
 			continue;
-
 		}
 
 		//// end check condition
@@ -303,7 +320,7 @@ void CKhuGle3DSprite::Render()
 		MatrixVector44(v2, world_v2, m_camera->m_view_matrix);
 
 		// Depth Clipping 
-		if (v0.z < 0 || v1.z < 0 || v2.z < 0) // < m_camera->near
+		if (v0.z < 0.1 || v1.z < 0.1 || v2.z < 0.1) // < m_camera->near
 		{
 			z_clipped++;
 			continue;
@@ -312,48 +329,56 @@ void CKhuGle3DSprite::Render()
 		// View -> Projection
 		CKgVector3D projected_v0, projected_v1, projected_v2;
 
+
 		MatrixVector44(projected_v0, v0, m_camera->m_projection_matrix);
 		MatrixVector44(projected_v1, v1, m_camera->m_projection_matrix);
 		MatrixVector44(projected_v2, v2, m_camera->m_projection_matrix);
-
-
 		
 		projected_v0 = (1. / projected_v0.w) * projected_v0;
 		projected_v1 = (1. / projected_v1.w) * projected_v1;
 		projected_v2 = (1. / projected_v2.w) * projected_v2;
 
-		// [-1, 1] -> [0, m_nH or m_nW]
+		t0 = (1. / projected_v0.w) * t0;
+		t1 = (1. / projected_v1.w) * t1;
+		t1 = (1. / projected_v2.w) * t2;
+
+		// [-1, 1] -> [0, m_nH or m_nW] , z: [0,1]
 		projected_v0.x += 1;
 		projected_v0.y += 1;
 		projected_v0.x *= Parent->m_nW / 2.;
 		projected_v0.y *= Parent->m_nW / 2.;
+		projected_v0.z += 1;
+		projected_v0.z /= 2;
 
 		projected_v1.x += 1;
 		projected_v1.y += 1;
 		projected_v1.x *= Parent->m_nW / 2.;
 		projected_v1.y *= Parent->m_nW / 2.;
+		projected_v1.z += 1;
+		projected_v1.z /= 2;
 
 		projected_v2.x += 1;
 		projected_v2.y += 1;
 		projected_v2.x *= Parent->m_nW / 2.;
 		projected_v2.y *= Parent->m_nW / 2.;
+		projected_v2.z += 1;
+		projected_v2.z /= 2;
 
+
+		std::list<CKgTriangle> listTriangle;
+		CKgTriangle original_t(projected_v0, projected_v1, projected_v2, t0, t1, t2, bFill);
+		listTriangle.push_back(original_t);
 
 		// Triangle clipping
-		if (!(projected_v0.x < 0 || projected_v0.x > Parent->m_nW - 1 || projected_v1.x < 0 || projected_v1.x > Parent->m_nW - 1 || projected_v2.x < 0 || projected_v2.x > Parent->m_nW - 1 ||
+		if ((projected_v0.x < 0 || projected_v0.x > Parent->m_nW - 1 || projected_v1.x < 0 || projected_v1.x > Parent->m_nW - 1 || projected_v2.x < 0 || projected_v2.x > Parent->m_nW - 1 ||
 			projected_v0.y < 0 || projected_v0.y > Parent->m_nH - 1 || projected_v1.y < 0 || projected_v1.y > Parent->m_nH - 1 || projected_v2.y < 0 || projected_v2.y > Parent->m_nH - 1
 			)) {
-			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)projected_v0.x, (int)projected_v0.y, projected_v0.z, (int)projected_v1.x, (int)projected_v1.y, projected_v1.z, (int)projected_v2.x, (int)projected_v2.y, projected_v2.z, m_fgColor, true);
-			rendered++;
-		}
-		else
-		{
-			CKgTriangle original_t(projected_v0, projected_v1, projected_v2, true);
+			clipped_rendered++;
+
+			CKgTriangle original_t(projected_v0, projected_v1, projected_v2, t0, t1, t2, bFill);
 
 			std::vector<CKgTriangle> clipped;
-			std::list<CKgTriangle> listTriangle;
 
-			listTriangle.push_back(original_t);
 			int nNewTriangles = 1;
 
 			// 여기가 가장 오래 걸림
@@ -381,13 +406,14 @@ void CKhuGle3DSprite::Render()
 				}
 				nNewTriangles = listTriangle.size();
 			}
+		}
+		// Rasterization
+		for (auto& tri : listTriangle)
+		{
+			rendered++;
+			if(c_map) DrawSprite(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, tri.t0.x, tri.t0.y, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, tri.t1.x, tri.t1.y, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, tri.t2.x, tri.t2.y, c_map);
+			DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, tri.bFill);
 
-
-			for (auto& tri : listTriangle)
-			{
-				clipped_rendered++;
-				DrawTriangle_Raw(Parent->m_ImageR, Parent->m_ImageG, Parent->m_ImageB, Parent->m_Depth, Parent->m_nW, Parent->m_nH, (int)tri.v0.x, (int)tri.v0.y, tri.v0.z, (int)tri.v1.x, (int)tri.v1.y, tri.v1.z, (int)tri.v2.x, (int)tri.v2.y, tri.v2.z, m_fgColor, original_t.bFill);
-			}
 		}
 	}
 	std::cout << "non-rendered: " <<  non_rendered << " z-clipped: " << z_clipped<< " rendered: " << rendered << " clipped-rendered: " << clipped_rendered << std::endl;

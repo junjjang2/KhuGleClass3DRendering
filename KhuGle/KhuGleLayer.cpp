@@ -90,7 +90,7 @@ void CKhuGleLayer::Render()
 	// clear Depth Map
 	for(int y=0; y< m_nH; y++)
 		for(int x=0; x<m_nW; x++)
-			m_Depth[y][x] = 0;
+			m_Depth[y][x] = 1.;
 	// end
 	int y;
 	for(y = 0 ; y < m_nH ; y++)

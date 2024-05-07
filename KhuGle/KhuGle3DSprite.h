@@ -3,26 +3,6 @@
 #include "KhuGleSprite.h"
 #include "KhuGleBase.h"
 
-int constexpr GP_3DTYPE_LINE = 0;
-int constexpr GP_3DTYPE_TRIANGLE = 1;
-
-
-
-struct render_inform
-{
-	render_inform(int start_x, int start_y, int end_x, int end_y, KgColor24 m_color)
-		: start_x(start_x),
-		  start_y(start_y),
-		  end_x(end_x),
-		  end_y(end_y),
-		  m_color(m_color)
-	{
-	}
-	int start_x, start_y, end_x, end_y;
-	KgColor24 m_color;
-};
-
-
 class CKhuGle3DObject : public CKhuGleSprite
 {
 public:
@@ -44,6 +24,7 @@ public:
 	
 	void MoveBy(double OffsetX, double OffsetY, double OffsetZ);
 	void RotateBy(double RadianX, double RadianY, double RadianZ);
+	void ScaleBy(double scaleX, double scaleY, double scaleZ);
 };
 
 class CKhuGleCamera : public CKhuGle3DObject
@@ -74,6 +55,10 @@ public:
 
 	CKhuGleCamera* m_camera;
 
+	ColorMap* c_map;
+
+	bool bFill;
+
 	std::vector<CKgVector2D> texture_list;
 	std::vector<CKgVector3D> vertex_list;
 	std::vector<std::vector<int>> triangle_list;
@@ -81,9 +66,6 @@ public:
 	void Render();
 	static void DrawTriangle(unsigned char** R, unsigned char** G, unsigned char** B, int nW, int nH,
 		int x0, int y0, int x1, int y1, int x2, int y2, KgColor24 Color24);
-
-	//void MoveBy(double OffsetX, double OffsetY, double OffsetZ);
-	//void RotateBy(double RadianX, double RadianY, double RadianZ);
 
 	void ReadObj(char* FilePath, std::vector<std::vector<double>>& vertex_list, std::vector<std::vector<int>>& triangle_list);
 };

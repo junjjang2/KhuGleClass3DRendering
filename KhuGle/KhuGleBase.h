@@ -53,6 +53,7 @@ struct CKgRect {
 	void Expanded(int e);
 };
 
+
 class CKgVector2D 
 {
 public:
@@ -94,17 +95,23 @@ CKgVector3D operator*(double s, CKgVector3D v);
 
 struct CKgTriangle {
 	CKgVector3D v0, v1, v2;
+	CKgVector2D t0, t1, t2;
 	bool bFill;
 	CKgTriangle() : v0(CKgVector3D()), v1(CKgVector3D()), v2(CKgVector3D()), bFill(false) {}
-	CKgTriangle(CKgVector3D vv0, CKgVector3D vv1, CKgVector3D vv2, bool bFill) : v0(vv0), v1(vv1), v2(vv2), bFill(bFill) {}
+	CKgTriangle(CKgVector3D vv0, CKgVector3D vv1, CKgVector3D vv2, bool bFill) : v0(vv0), v1(vv1), v2(vv2), t0(0,0), t1(0,0), t2(0,0), bFill(bFill) {}
+	CKgTriangle(CKgVector3D vv0, CKgVector3D vv1, CKgVector3D vv2, CKgVector2D tt0, CKgVector2D tt1, CKgVector2D tt2, bool bFill) : v0(vv0), v1(vv1), v2(vv2), t0(tt0), t1(tt1), t2(tt2), bFill(bFill) {}
 };
 
-struct CKg3DLine
+class ColorMap
 {
-	CKgVector3D start, end;
+public:
+	unsigned long** color_map;
+	unsigned int n_W, n_H;
 
-	CKg3DLine() : start(CKgVector3D()), end(CKgVector3D()) {}
-	CKg3DLine(CKgVector3D start, CKgVector3D direction) : start(start), end(start + direction) {}
+	ColorMap(char* filePath);
+	~ColorMap();
+
+	unsigned long getColor(double u, double v);
 };
 
 
@@ -113,13 +120,19 @@ void free_cmatrix(unsigned char **Image, int nH, int nW);
 double **dmatrix(int nH, int nW);
 void free_dmatrix(double **Image, int nH, int nW);
 
-void DrawLine(unsigned char **ImageGray, int nW, int nH, int x0, int y0, int x1, int y1, unsigned char Color);
+void DrawLine(unsigned char** ImageGray,  int nW, int nH, int x0, int y0, int x1, int y1, unsigned char Color);
+void DrawLine(unsigned char** ImageGray, double** depth, int nW, int nH, int x0, int y0, double z0, int x1, int y1, double z1, unsigned char Color);
 
 bool InverseMatrix(double  **a, double **y, int nN);
 
 void MatrixMultiply44(double** result, double** mat1, double** mat2);
 
-void DrawTriangle_Raw(unsigned char** R, unsigned char** G, unsigned char** B, double** depth, int nW, int nH, int x0, int y0, double z0, int x1, int y1, double z1, int x2, int y2, double z2, unsigned char Color, bool bFill);
+void DrawSprite(unsigned char** R, unsigned char** G, unsigned char** B, double** depth, int nW, int nH, int x0, int y0, double z0, double u0, double v0, 
+	int x1, int y1, double z1, double u1, double v1, int x2, int y2, double z2, double u2, double v2, ColorMap* c_map);
+
+void Bresenham(unsigned char** R, unsigned char** G, unsigned char** B, double** depth, int nW, int nH, int x0, int y0, double z0, int x1, int y1, double z1, int x2, int y2, double z2, unsigned long Color, bool bFill);
+
+void DrawTriangle_Raw(unsigned char** R, unsigned char** G, unsigned char** B, double** depth, int nW, int nH, int x0, int y0, double z0, int x1, int y1, double z1, int x2, int y2, double z2, unsigned long Color, bool bFill);
 
 bool linePlaneIntersection(CKgVector3D& contact, CKgVector3D ray, CKgVector3D rayOrigin, CKgVector3D normal, CKgVector3D coord);
 
